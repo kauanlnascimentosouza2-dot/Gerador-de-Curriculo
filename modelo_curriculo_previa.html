@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Modelo de currículo sem experiência</title>
+  <style>
+    :root {
+      --charcoal: #303848;
+      --text: #404040;
+      --muted: #666b75;
+      --sidebar: #f2f2f2;
+      --paper: #ffffff;
+      --stage: #dfe3ea;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      padding: 28px;
+      color: var(--text);
+      background: var(--stage);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .resume {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 12.7mm 25.4mm;
+      display: flex;
+      flex-direction: column;
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(30, 38, 55, .18);
+      font-size: 10.8pt;
+      line-height: 1.42;
+    }
+
+    .name {
+      margin: 0;
+      padding: 4.5mm 0 3mm;
+      color: var(--charcoal);
+      font-size: 29pt;
+      font-weight: 400;
+      letter-spacing: .12em;
+      line-height: 1.06;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .contact {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 1.5mm 3mm;
+      min-height: 9mm;
+      margin-bottom: 4.5mm;
+      color: var(--charcoal);
+      font-size: 9.4pt;
+      text-align: center;
+    }
+
+    .contact span { display: inline-flex; align-items: center; gap: 3mm; }
+    .contact span + span::before { content: "•"; color: #a5a9b2; }
+
+    .objective { margin-bottom: 5mm; }
+    .band {
+      margin: 0;
+      padding: 3.1mm 3.5mm;
+      color: #fff;
+      background: var(--charcoal);
+      font-size: 11.8pt;
+      font-weight: 700;
+      letter-spacing: .09em;
+      line-height: 1.1;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .objective p {
+      margin: 0;
+      padding: 4mm 1mm 1mm;
+      line-height: 1.45;
+    }
+
+    .columns {
+      display: grid;
+      grid-template-columns: 32% 68%;
+      align-items: stretch;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .sidebar {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      padding: 0 4mm;
+      background: var(--sidebar);
+    }
+
+    .side-section {
+      padding: 8mm 0 5mm;
+      break-inside: avoid;
+    }
+
+    .side-section + .side-section {
+      border-top: 1px solid #d8d8d8;
+    }
+
+    .side-section .item + .item { margin-top: 6mm; }
+    .side-title {
+      display: flex;
+      align-items: center;
+      gap: 2mm;
+      margin: 0 0 4mm;
+      color: var(--charcoal);
+      font-size: 11.2pt;
+      font-weight: 700;
+      letter-spacing: .075em;
+      line-height: 1.15;
+      text-transform: uppercase;
+    }
+
+    .side-title::after {
+      content: "";
+      min-width: 8mm;
+      height: 1px;
+      flex: 1;
+      background: var(--charcoal);
+    }
+
+    .main-column {
+      display: grid;
+      grid-template-rows: 1.15fr .85fr;
+      min-height: 100%;
+    }
+
+    .main-section {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      break-inside: avoid;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 4mm 5mm;
+    }
+
+    .main-section:first-child .main-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      gap: 6mm;
+    }
+
+    .item { margin-bottom: 3.2mm; }
+    .item:last-child { margin-bottom: 0; }
+    .item-title { color: var(--text); font-weight: 700; text-transform: uppercase; }
+    .item-meta { margin-bottom: 1mm; color: var(--muted); font-size: 9.3pt; font-style: italic; }
+    .item-description { line-height: 1.42; }
+
+    ul { margin: 0; padding-left: 4.5mm; }
+    li { margin-bottom: 1.2mm; }
+
+    .skills {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5mm;
+      align-content: center;
+    }
+
+    .main-column.no-experience {
+      grid-template-rows: 1fr;
+    }
+
+    .main-column.no-experience .skills {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-content: stretch;
+      justify-content: stretch;
+      gap: 10mm;
+      padding: 10mm 8mm;
+    }
+
+    .main-column.no-experience .skill-group {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .main-column.no-experience .skill-group strong {
+      margin-bottom: 6mm;
+      font-size: 10.8pt;
+    }
+
+    .main-column.no-experience .skill-group ul {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      justify-content: space-evenly;
+    }
+
+    .skill-group strong {
+      display: block;
+      margin-bottom: 1.8mm;
+      color: var(--charcoal);
+      font-size: 9.7pt;
+      text-transform: uppercase;
+    }
+
+    .single-column {
+      display: grid;
+      grid-template-rows: 1.05fr .9fr 1.2fr;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .single-section {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      break-inside: avoid;
+    }
+
+    .single-content {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      justify-content: space-evenly;
+      gap: 4mm;
+      padding: 4mm 6mm;
+    }
+
+    .single-content .item { margin: 0; }
+
+    .single-skills .skill-group {
+      display: block;
+    }
+
+    .single-skills .skill-group strong {
+      margin-bottom: 2.5mm;
+      font-size: 10.2pt;
+    }
+
+    .single-skills ul {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5mm;
+    }
+
+    .single-skills li { margin: 0; }
+
+    @media (max-width: 850px) {
+      body { padding: 10px; }
+      .resume { margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="resume" aria-label="Modelo de currículo sem experiência">
+    <header>
+      <h1 class="name">Maria Aparecida da Silva</h1>
+      <div class="contact">
+        <span>São Paulo - SP</span>
+        <span>(11) 99999-9999</span>
+        <span>19 anos</span>
+        <span>maria.silva@email.com</span>
+        <span>linkedin.com/in/maria-silva</span>
+      </div>
+    </header>
+
+    <section class="objective">
+      <h2 class="band">Objetivo</h2>
+      <p>Atuar na área administrativa, apoiando a organização de informações, documentos e rotinas da equipe, enquanto desenvolvo novos conhecimentos e experiência profissional.</p>
+    </section>
+
+    <div class="single-column">
+        <section class="single-section">
+          <h2 class="band">Formação</h2>
+          <div class="single-content">
+          <div class="item">
+            <div class="item-title">Ensino médio</div>
+            <div>Escola Estadual Maria da Silva</div>
+            <div class="item-meta">Cursando · Previsão: dezembro de 2026</div>
+          </div>
+          <div class="item">
+            <div class="item-title">Técnico em Administração</div>
+            <div>Instituição de Ensino Profissional</div>
+            <div class="item-meta">Cursando · 800 horas</div>
+          </div>
+          </div>
+        </section>
+
+        <section class="single-section">
+          <h2 class="band">Cursos</h2>
+          <div class="single-content">
+          <div class="item">
+            <div class="item-title">Informática</div>
+            <div>SENAI</div>
+            <div class="item-meta">Intermediário · 40 horas</div>
+          </div>
+          <div class="item">
+            <div class="item-title">Atendimento ao cliente</div>
+            <div>Escola Virtual</div>
+            <div class="item-meta">Concluído em 2025 · 20 horas</div>
+          </div>
+          </div>
+        </section>
+
+        <section class="single-section">
+          <h2 class="band">Habilidades</h2>
+          <div class="single-content single-skills">
+            <div class="skill-group">
+              <strong>Técnicas</strong>
+              <ul>
+                <li>Pacote Office</li>
+                <li>Excel intermediário</li>
+                <li>Organização de documentos</li>
+                <li>Atendimento ao cliente</li>
+              </ul>
+            </div>
+            <div class="skill-group">
+              <strong>Comportamentais</strong>
+              <ul>
+                <li>Trabalho em equipe</li>
+                <li>Organização</li>
+                <li>Boa comunicação</li>
+                <li>Responsabilidade</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+    </div>
+  </main>
+</body>
+</html>

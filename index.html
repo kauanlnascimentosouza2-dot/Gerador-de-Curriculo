@@ -1,0 +1,2149 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1a2876">
+  <meta name="description" content="Gerador de currículos do Instituto Social Nossa Senhora de Fátima">
+  <title>Gerador de Currículo | Instituto Social Nossa Senhora de Fátima</title>
+  <script src="pdf-lib.min.js"></script>
+  <script src="docx.iife.js"></script>
+  <style>
+    :root {
+      --blue-950: #10184f;
+      --blue-900: #1a2876;
+      --blue-800: #253895;
+      --blue-700: #3654bd;
+      --blue-100: #e9edfb;
+      --blue-050: #f5f7fe;
+      --yellow: #f6c445;
+      --yellow-dark: #d99c12;
+      --ink: #20243a;
+      --muted: #68708a;
+      --line: #dfe4f1;
+      --surface: #ffffff;
+      --page: #f4f6fb;
+      --success: #187b55;
+      --danger: #b72e43;
+      --shadow: 0 24px 70px rgba(26, 40, 118, .14);
+      --radius-xl: 30px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 14%, rgba(246, 196, 69, .18), transparent 24rem),
+        radial-gradient(circle at 92% 4%, rgba(54, 84, 189, .16), transparent 28rem),
+        var(--page);
+      font-family: "Century Gothic", "Trebuchet MS", Arial, sans-serif;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { border: 0; }
+    a { color: inherit; }
+    [hidden] { display: none !important; }
+
+    .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      width: min(1240px, calc(100% - 32px));
+      min-height: 94px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+    .brand-logo { width: 68px; height: 86px; display: block; object-fit: contain; filter: drop-shadow(0 5px 10px rgba(26,40,118,.12)); }
+    .brand-copy span, .brand-copy strong { display: block; }
+    .brand-copy span { color: var(--blue-700); font-size: .68rem; letter-spacing: .14em; font-weight: 800; }
+    .brand-copy strong { max-width: 280px; color: var(--blue-900); font-size: .95rem; line-height: 1.25; }
+
+    .top-actions { display: flex; align-items: center; gap: 10px; }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 800;
+    }
+    .status-pill::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--success); }
+
+    .main {
+      width: min(1240px, calc(100% - 32px));
+      flex: 1;
+      margin: 0 auto 34px;
+    }
+
+    .progress-wrap { margin: 0 0 14px; }
+    .progress-meta { display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-size: .8rem; font-weight: 800; margin-bottom: 8px; }
+    .progress-track { height: 7px; overflow: hidden; border-radius: 999px; background: #dce2f4; }
+    .progress-bar { height: 100%; width: 12.5%; border-radius: inherit; background: linear-gradient(90deg, var(--yellow), var(--blue-700)); transition: width .35s ease; }
+
+    .workspace {
+      position: relative;
+      min-height: 720px;
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(255,255,255,.9);
+      background: rgba(255,255,255,.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .dot-field { position: absolute; top: 25px; right: 30px; width: 116px; height: 74px; opacity: .33; background-image: radial-gradient(var(--blue-700) 3px, transparent 4px); background-size: 18px 18px; pointer-events: none; }
+
+    .step {
+      display: none;
+      min-height: 720px;
+      padding: clamp(28px, 5vw, 68px);
+      animation: enter .35s ease;
+    }
+    .step.active { display: block; }
+    @keyframes enter { from { opacity: 0; transform: translateX(22px); } to { opacity: 1; transform: none; } }
+
+    .intro-layout { min-height: 580px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); align-items: center; gap: clamp(32px, 7vw, 90px); }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; padding: 8px 13px; border-radius: 999px; color: var(--blue-900); background: var(--blue-100); font-size: .72rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--yellow-dark); }
+    h1 { max-width: 760px; margin: 20px 0 18px; color: var(--blue-950); font-size: clamp(2.7rem, 6.5vw, 5.8rem); line-height: .98; letter-spacing: -.055em; }
+    h1 em { color: var(--blue-700); font-style: normal; }
+    .lead { max-width: 660px; margin: 0 0 28px; color: var(--muted); font-size: clamp(1rem, 1.6vw, 1.16rem); line-height: 1.75; }
+
+    .intro-card { padding: 28px; border-radius: 28px; color: #fff; background: linear-gradient(145deg, var(--blue-900), #303d91); box-shadow: 0 28px 54px rgba(26,40,118,.25); }
+    .intro-card h2 { margin: 0 0 8px; color: #fff; font-size: 1.3rem; }
+    .intro-card p { margin: 0; color: rgba(255,255,255,.78); line-height: 1.6; }
+    .intro-list { display: grid; gap: 13px; margin: 22px 0 0; padding: 0; list-style: none; }
+    .intro-list li { display: flex; gap: 12px; align-items: center; padding-top: 13px; border-top: 1px solid rgba(255,255,255,.14); font-size: .9rem; }
+    .intro-list b { width: 27px; height: 27px; display: grid; place-items: center; flex: 0 0 auto; color: var(--blue-950); background: var(--yellow); border-radius: 50%; }
+
+    .step-layout { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: clamp(28px, 5vw, 70px); align-items: start; }
+    .step-main { min-width: 0; }
+    .step-aside { position: sticky; top: 24px; }
+    .step-title { margin: 12px 0 10px; color: var(--blue-950); font-size: clamp(2rem, 4vw, 3.35rem); line-height: 1.04; letter-spacing: -.035em; }
+    .step-description { max-width: 760px; margin: 0 0 28px; color: var(--muted); line-height: 1.65; }
+
+    .tip-card { padding: 22px; border-radius: var(--radius-lg); background: var(--blue-050); border: 1px solid #dce3f9; }
+    .tip-card .tip-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 13px; color: var(--blue-900); background: var(--yellow); font-weight: 900; }
+    .tip-card h3 { margin: 16px 0 8px; color: var(--blue-900); font-size: 1rem; }
+    .tip-card p { margin: 0; color: var(--muted); font-size: .84rem; line-height: 1.6; }
+
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px; }
+    .field { position: relative; min-width: 0; }
+    .field.full { grid-column: 1 / -1; }
+    .field label, .field legend { display: block; margin: 0 0 7px; padding-right: 104px; color: var(--blue-950); font-size: .82rem; font-weight: 900; }
+    .field small { display: block; margin-top: 6px; color: var(--muted); font-size: .74rem; line-height: 1.45; }
+    .absence-button { position: absolute; z-index: 2; top: -5px; right: 0; min-height: 27px; padding: 0 9px; cursor: pointer; border: 1px solid #d9e0f6; border-radius: 999px; color: var(--blue-700); background: var(--blue-050); font-size: .66rem; font-weight: 900; transition: .2s; }
+    .absence-button:hover, .absence-button:focus-visible { border-color: var(--blue-700); outline: 3px solid rgba(54,84,189,.12); }
+    .absence-button.active { color: #fff; background: var(--blue-700); border-color: var(--blue-700); }
+    .field.is-absent input, .field.is-absent select, .field.is-absent textarea { color: #8b91a5; background: #f0f2f7; border-style: dashed; }
+    .absence-status { display: none; margin-top: 6px; color: #7b8297; font-size: .72rem; font-weight: 800; }
+    .field.is-absent .absence-status { display: block; }
+    .field.is-absent textarea + .suggest-trigger { opacity: .45; pointer-events: none; }
+    input, select, textarea {
+      width: 100%;
+      min-height: 50px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      color: var(--ink);
+      background: #fff;
+      padding: 12px 14px;
+      outline: none;
+      transition: border .2s, box-shadow .2s;
+    }
+    textarea { min-height: 110px; resize: vertical; line-height: 1.55; }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue-700); box-shadow: 0 0 0 4px rgba(54,84,189,.12); }
+    input[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--danger); box-shadow: 0 0 0 4px rgba(183,46,67,.1); }
+    .counter { float: right; color: var(--muted); font-size: .72rem; font-weight: 700; }
+
+    .choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .choice { position: relative; }
+    .choice input { position: absolute; opacity: 0; pointer-events: none; }
+    .choice label { display: block; min-height: 86px; padding: 16px; cursor: pointer; border: 1px solid var(--line); border-radius: 15px; background: #fff; }
+    .choice label strong, .choice label span { display: block; }
+    .choice label strong { color: var(--blue-950); margin-bottom: 5px; }
+    .choice label span { color: var(--muted); font-size: .78rem; line-height: 1.45; }
+    .choice input:checked + label { border-color: var(--blue-700); background: var(--blue-050); box-shadow: inset 0 0 0 2px rgba(54,84,189,.12); }
+
+    .repeat-list { display: grid; gap: 14px; }
+    .repeat-list.section-disabled { opacity: .52; filter: grayscale(.35); pointer-events: none; }
+    .repeat-card { position: relative; padding: 20px; border: 1px solid var(--line); border-radius: 17px; background: #fbfcff; }
+    .repeat-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .repeat-card-head h3 { margin: 0; color: var(--blue-900); font-size: .95rem; }
+    .remove-button { min-height: 36px; padding: 0 11px; color: var(--danger); background: #fff0f3; border-radius: 10px; cursor: pointer; font-size: .75rem; font-weight: 900; }
+
+    .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 11px; margin-top: 22px; }
+    .button { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 0 20px; border-radius: 13px; cursor: pointer; font-weight: 900; transition: transform .2s, box-shadow .2s, background .2s; }
+    .button:hover { transform: translateY(-2px); }
+    .button-primary { color: #fff; background: linear-gradient(135deg, var(--blue-700), var(--blue-900)); box-shadow: 0 12px 26px rgba(26,40,118,.2); }
+    .button-secondary { color: var(--blue-900); background: #fff; border: 1px solid var(--line); }
+    .button-yellow { color: var(--blue-950); background: var(--yellow); }
+    .button-ghost { min-height: 40px; padding: 0 13px; color: var(--muted); background: transparent; border: 1px solid var(--line); font-size: .78rem; }
+    .button:disabled { opacity: .55; cursor: wait; transform: none; }
+
+    .suggest-trigger { min-height: 38px; display: inline-flex; align-items: center; gap: 7px; margin-top: 9px; padding: 0 12px; cursor: pointer; border-radius: 11px; color: var(--blue-900); background: var(--blue-050); border: 1px solid #d9e0f6; font-size: .75rem; font-weight: 900; }
+    .suggest-trigger::before { content: "✦"; color: var(--yellow-dark); font-size: .95rem; }
+    .suggestion-modal { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 22px; background: rgba(8, 13, 50, .66); backdrop-filter: blur(8px); }
+    .suggestion-modal[hidden] { display: none; }
+    .suggestion-dialog { width: min(840px, 100%); max-height: min(760px, calc(100vh - 44px)); overflow: auto; padding: clamp(22px, 4vw, 36px); border-radius: 25px; background: #fff; box-shadow: 0 30px 90px rgba(0,0,0,.3); }
+    .suggestion-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 22px; }
+    .suggestion-head h2 { margin: 7px 0 7px; color: var(--blue-950); font-size: clamp(1.55rem, 3vw, 2.35rem); line-height: 1.05; }
+    .suggestion-head p { margin: 0; max-width: 620px; color: var(--muted); font-size: .84rem; line-height: 1.55; }
+    .suggestion-close { width: 42px; height: 42px; flex: 0 0 auto; cursor: pointer; border-radius: 12px; color: var(--blue-900); background: var(--blue-050); font-size: 1.2rem; }
+    .suggestion-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .suggestion-card { min-height: 132px; padding: 17px; cursor: pointer; text-align: left; border: 1px solid var(--line); border-radius: 16px; color: var(--ink); background: #fff; transition: transform .2s, border .2s, box-shadow .2s; }
+    .suggestion-card:hover, .suggestion-card:focus-visible { transform: translateY(-2px); border-color: var(--blue-700); box-shadow: 0 12px 24px rgba(26,40,118,.12); outline: none; }
+    .suggestion-card strong, .suggestion-card span { display: block; }
+    .suggestion-card strong { margin-bottom: 7px; color: var(--blue-900); font-size: .9rem; }
+    .suggestion-card span { color: var(--muted); font-size: .76rem; line-height: 1.52; white-space: pre-line; }
+    .suggestion-card small { display: inline-block; margin-top: 11px; padding: 4px 8px; border-radius: 999px; color: var(--blue-900); background: var(--blue-100); font-size: .66rem; font-weight: 900; }
+
+    .footer-nav { width: min(1240px, calc(100% - 32px)); margin: 0 auto 28px; display: grid; grid-template-columns: 160px 1fr 160px; align-items: center; gap: 16px; }
+    .step-dots { display: flex; justify-content: center; align-items: center; gap: 8px; }
+    .step-dot { width: 10px; height: 10px; padding: 0; border-radius: 50%; background: #c8d0e8; cursor: pointer; transition: .2s; }
+    .step-dot.active { width: 28px; border-radius: 999px; background: var(--blue-700); }
+
+    #step-7 { padding: 32px; }
+    .review-layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+    .review-panel { position: sticky; top: 20px; }
+    .review-panel h2 { margin: 12px 0 10px; color: var(--blue-950); font-size: 2.25rem; line-height: 1.05; }
+    .review-panel > p { color: var(--muted); line-height: 1.6; }
+    .quality-box { display: grid; gap: 9px; margin: 20px 0; padding: 16px; border-radius: 15px; background: var(--blue-050); border: 1px solid #dce3f9; }
+    .quality-item { display: flex; gap: 9px; color: var(--muted); font-size: .8rem; line-height: 1.45; }
+    .quality-item b { color: var(--success); }
+    .edit-tip { margin: 16px 0; padding: 14px; border: 1px solid #ecd276; border-radius: 14px; color: #604a00; background: #fff8dc; font-size: .8rem; line-height: 1.5; }
+    .edit-tip strong { display: block; margin-bottom: 3px; color: #403100; }
+    .design-toolbar { display: grid; gap: 8px; margin: 14px 0; }
+    .design-toolbar .button { width: 100%; min-height: 42px; }
+    .alignment-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .alignment-actions button { min-height: 34px; padding: 0 5px; border: 1px solid #d7def1; border-radius: 8px; color: var(--blue-900); background: #fff; cursor: pointer; font-size: .68rem; font-weight: 800; }
+    .alignment-actions button:hover { background: var(--blue-050); }
+    .overflow-alert { margin: 14px 0; padding: 13px; border-radius: 12px; color: #7a4a00; background: #fff4d5; border: 1px solid #efd997; font-size: .78rem; line-height: 1.45; }
+
+    .email-box { margin-top: 20px; padding: 18px; border-radius: 17px; color: #fff; background: var(--blue-900); }
+    .email-box h3 { margin: 0 0 6px; font-size: 1rem; }
+    .email-box p { margin: 0 0 12px; color: rgba(255,255,255,.74); font-size: .75rem; line-height: 1.45; }
+    .email-inline { display: flex; gap: 8px; }
+    .email-inline input { min-width: 0; border-color: rgba(255,255,255,.22); }
+    .email-inline button { flex: 0 0 auto; }
+
+    .paper-stage { overflow: auto; padding: 10px; border-radius: 20px; background: #dfe3ed; border: 1px solid #d2d8e6; }
+    .resume-paper {
+      --resume-charcoal: #303848;
+      --resume-text: #404040;
+      --resume-muted: #595959;
+      --resume-side: #f2f2f2;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 12.7mm 25.4mm;
+      color: var(--resume-text);
+      background: #fff;
+      box-shadow: 0 16px 36px rgba(31,39,68,.18);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10.8pt;
+      line-height: 1.42;
+      overflow: hidden;
+      transition: padding .2s ease, font-size .2s ease;
+    }
+    .resume-page-2 { margin-top: 18px; }
+    .resume-continuation { margin: 0 0 5mm; padding: 3.1mm 3.5mm; color: #fff; background: var(--resume-charcoal); font-size: 10.5pt; font-weight: 700; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
+    .resume-page2-content { position: relative; display: flex; flex: 1; flex-direction: column; min-height: 0; }
+    .resume-page2-content > .resume-object:not(.custom-text-box) { width: 100%; margin-bottom: 5mm; }
+    .resume-name { margin: 0; padding: 4.5mm 0 3mm; color: var(--resume-charcoal); background: transparent; font-size: 29pt; font-weight: 400; letter-spacing: .12em; text-align: center; text-transform: uppercase; line-height: 1.06; }
+    .resume-contact { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1.5mm 3mm; min-height: 9mm; margin-bottom: 4.5mm; color: var(--resume-charcoal); font-size: 9.4pt; text-align: center; }
+    .resume-contact-group { display: inline-flex; align-items: center; gap: 3mm; overflow-wrap: anywhere; }
+    .resume-contact-group + .resume-contact-group::before { content: "•"; color: #a5a9b2; }
+    .resume-contact a { color: inherit; text-decoration: none; }
+    .resume-objective { margin-bottom: 5mm; }
+    .resume-objective-title, .resume-main-title { margin: 0; padding: 3.1mm 3.5mm; color: #fff; background: var(--resume-charcoal); font-size: 11.8pt; font-weight: 700; letter-spacing: .09em; text-align: center; text-transform: uppercase; line-height: 1.1; }
+    .resume-objective-title, .resume-main-title { width: 100%; }
+    .resume-objective-content { padding: 4mm 1mm 2mm; color: var(--resume-text); line-height: 1.42; }
+    .resume-objective-content p { margin: 0; }
+    .resume-grid { display: grid; grid-template-columns: 32% 68%; align-items: stretch; flex: 1; min-height: 0; gap: 0; }
+    .resume-grid.no-sidebar, .resume-grid.no-main { grid-template-columns: 1fr; }
+    .resume-sidebar { display: grid; grid-auto-rows: 1fr; padding: 0 4mm; background: var(--resume-side); }
+    .resume-sidebar.two-sections { grid-template-rows: 1fr 1fr; }
+    .resume-sidebar[hidden] { display: none; }
+    .resume-main { display: grid; grid-auto-rows: 1fr; min-width: 0; min-height: 100%; padding-left: 0; }
+    .resume-main.two-sections { grid-template-rows: 1.15fr .85fr; }
+    .resume-side-section, .resume-main-section { break-inside: avoid; }
+    .resume-side-section { padding: 8mm 0 5mm; }
+    .resume-side-section + .resume-side-section { border-top: 1px solid #d8d8d8; }
+    .resume-side-title { display: flex; align-items: center; gap: 2mm; margin: 0 0 4mm; color: var(--resume-charcoal); font-size: 11.2pt; font-weight: 700; letter-spacing: .075em; text-transform: uppercase; line-height: 1.15; }
+    .resume-side-title::after { content: ""; min-width: 8mm; height: 1px; flex: 1; background: var(--resume-charcoal); }
+    .resume-side-content { color: var(--resume-text); line-height: 1.38; }
+    .resume-side-content .resume-item + .resume-item { margin-top: 6mm; }
+    .resume-main-section { display: flex; flex-direction: column; min-height: 0; }
+    .resume-main-content { flex: 1; padding: 4mm 5mm; }
+    .resume-main-section:first-child .resume-main-content { display: flex; flex-direction: column; justify-content: space-evenly; gap: 6mm; }
+    .resume-item { margin-bottom: 3.2mm; }
+    .resume-item:last-child { margin-bottom: 0; }
+    .resume-item-title { color: var(--resume-text); font-weight: 700; text-transform: uppercase; }
+    .resume-item-meta { margin-bottom: 1mm; color: var(--resume-muted); font-size: 9.3pt; font-style: italic; }
+    .resume-item-description { margin-top: 1mm; white-space: pre-line; }
+    .resume-list { margin: 0; padding-left: 4mm; }
+    .resume-list li { margin-bottom: 1.2mm; }
+    .resume-skill-columns { display: grid; grid-template-columns: 1fr 1fr; align-content: center; gap: 5mm; }
+    .resume-skill-columns.one { grid-template-columns: 1fr; }
+    .resume-skill-group strong { display: block; margin-bottom: 1.8mm; color: var(--resume-charcoal); font-size: 9.7pt; text-transform: uppercase; }
+    .empty-resume { color: #9299aa; font-style: italic; }
+
+    .resume-single { display: grid; grid-auto-rows: 1fr; flex: 1; min-height: 0; }
+    .resume-single.three-sections { grid-template-rows: 1.05fr .9fr 1.2fr; }
+    .resume-single-section { display: flex; flex-direction: column; min-height: 0; break-inside: avoid; }
+    .resume-single-content { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; gap: 4mm; padding: 4mm 6mm; }
+    .resume-single-content .resume-item { margin: 0; }
+    .resume-single .resume-skill-columns { display: flex; flex: 1; flex-direction: column; justify-content: space-evenly; gap: 4mm; }
+    .resume-single .resume-skill-group strong { margin-bottom: 2.5mm; font-size: 10.2pt; }
+    .resume-single .resume-list { display: flex; flex-direction: column; gap: 1.5mm; }
+    .resume-single .resume-list li { margin: 0; }
+
+    .resume-editable {
+      min-width: 1em;
+      border-radius: 3px;
+      cursor: text;
+      outline: none;
+      transition: background .15s ease, box-shadow .15s ease;
+    }
+    .resume-editable:hover { background: #fff9df; box-shadow: 0 0 0 1px #eedb91; }
+    .resume-editable:focus { background: #fff3b7; box-shadow: 0 0 0 1.5px #d1a900; }
+    .resume-objective-content .resume-editable, .resume-item-description.resume-editable { white-space: pre-line; }
+
+    .resume-object { position: relative; z-index: 1; }
+    .resume-object.is-selected { z-index: 8; outline: 1.5px dashed #315dba; outline-offset: 2px; }
+    .object-controls { position: absolute; z-index: 12; top: -29px; right: -2px; display: none; align-items: center; gap: 4px; padding: 3px; border: 1px solid #b9c9ed; border-radius: 8px; background: #fff; box-shadow: 0 4px 12px rgba(31,39,68,.18); }
+    .resume-object.is-selected > .object-controls { display: flex; }
+    .object-control { min-width: 27px; height: 25px; padding: 0 7px; border: 0; border-radius: 5px; color: #173875; background: #edf2ff; cursor: grab; font: 700 10px/1 Arial, sans-serif; user-select: none; touch-action: none; }
+    .object-control:hover { background: #dfe8ff; }
+    .object-delete { color: #a51f3d; background: #fff0f3; cursor: pointer; }
+    .resize-handle { position: absolute; z-index: 12; right: -6px; bottom: -6px; display: none; width: 13px; height: 13px; padding: 0; border: 2px solid #fff; border-radius: 3px; background: #315dba; box-shadow: 0 0 0 1px #315dba; cursor: nwse-resize; user-select: none; touch-action: none; }
+    .resume-object.is-selected > .resize-handle { display: block; }
+    .custom-text-box { position: absolute; top: 0; left: 0; min-width: 120px; min-height: 42px; padding: 8px 10px; border: 1px solid transparent; background: rgba(255,255,255,.96); }
+    .custom-text-box.is-selected { border-color: #315dba; }
+    .custom-text-box .resume-editable { min-height: 1.4em; white-space: pre-line; }
+    body.is-dragging, body.is-dragging * { cursor: grabbing !important; user-select: none !important; }
+    body.is-dragging .resume-paper { overflow: visible; }
+    .alignment-guide { position: absolute; z-index: 20; display: none; pointer-events: none; background: #df2f78; box-shadow: 0 0 0 1px rgba(255,255,255,.8); }
+    .alignment-guide.vertical { top: 0; bottom: 0; width: 1px; }
+    .alignment-guide.horizontal { left: 0; right: 0; height: 1px; }
+    .alignment-guide.show { display: block; }
+
+    .resume-paper.density-sparse { padding-top: 13mm; padding-bottom: 13mm; font-size: 11pt; line-height: 1.44; }
+    .resume-paper.density-sparse .resume-name { padding-top: 5mm; font-size: 30pt; }
+    .resume-paper.density-sparse .resume-objective { margin-bottom: 6mm; }
+    .resume-paper.density-sparse .resume-side-section { padding-top: 7mm; }
+    .resume-paper.density-sparse .resume-main-section { padding-bottom: 6mm; }
+    .resume-paper.density-sparse .resume-item { margin-bottom: 4mm; }
+
+    .resume-paper.density-dense { padding: 9mm 18mm; font-size: 9pt; line-height: 1.25; }
+    .resume-paper.density-dense .resume-name { padding-top: 1mm; font-size: 24pt; }
+    .resume-paper.density-dense .resume-contact { min-height: 9mm; margin-bottom: 2mm; font-size: 8.2pt; }
+    .resume-paper.density-dense .resume-objective { margin-bottom: 2mm; }
+    .resume-paper.density-dense .resume-objective-content { padding-top: 2.5mm; padding-bottom: 1mm; }
+    .resume-paper.density-dense .resume-side-section { padding-top: 3mm; }
+    .resume-paper.density-dense .resume-main-section { padding-bottom: 2mm; }
+    .resume-paper.density-dense .resume-main-content { padding: 2.5mm 4mm 0; }
+    .resume-paper.density-dense .resume-item { margin-bottom: 1.5mm; }
+    .resume-paper.density-dense .resume-item-meta { font-size: 7.8pt; }
+    .resume-paper.density-dense .resume-list li { margin-bottom: .4mm; }
+
+    .toast { position: fixed; z-index: 20; left: 50%; bottom: 24px; transform: translate(-50%, 120px); max-width: min(520px, calc(100% - 32px)); padding: 13px 18px; border-radius: 13px; color: #fff; background: var(--blue-950); box-shadow: 0 14px 38px rgba(0,0,0,.25); font-size: .82rem; font-weight: 800; opacity: 0; transition: .3s; }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+    .toast.error { background: var(--danger); }
+
+    @media (max-width: 1000px) {
+      .step-layout, .review-layout { grid-template-columns: 1fr; }
+      .step-aside, .review-panel { position: static; }
+      .intro-layout { grid-template-columns: 1fr; }
+      .intro-card { max-width: 640px; }
+      .review-panel { order: 0; }
+      .paper-stage { order: 1; }
+    }
+    @media (max-width: 720px) {
+      .topbar { min-height: 78px; }
+      .brand-logo { width: 48px; height: 62px; }
+      .brand-copy span { display: none; }
+      .brand-copy strong { max-width: 175px; font-size: .78rem; }
+      .status-pill { display: none; }
+      .step { min-height: 680px; padding: 28px 20px; }
+      .workspace { min-height: 680px; border-radius: 22px; }
+      .form-grid, .choice-grid { grid-template-columns: 1fr; }
+      .footer-nav { grid-template-columns: 1fr 1fr; }
+      .step-dots { grid-column: 1 / -1; grid-row: 1; }
+      .footer-nav .button:first-child { grid-column: 1; }
+      .footer-nav .button:last-child { grid-column: 2; }
+      .email-inline { flex-direction: column; }
+      .suggestion-modal { padding: 12px; }
+      .suggestion-dialog { padding: 20px 16px; border-radius: 20px; }
+      .suggestion-grid { grid-template-columns: 1fr; }
+      #step-7 { padding: 22px 12px; }
+      .paper-stage { padding: 8px; }
+      .resume-paper { transform-origin: top left; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#inicio" aria-label="Voltar ao início">
+        <img class="brand-logo" src="logo-nsf-institucional.png" alt="Logo do Instituto Social Nossa Senhora de Fátima">
+        <span class="brand-copy"><span>INSTITUTO SOCIAL</span><strong>NOSSA SENHORA DE FÁTIMA</strong></span>
+      </a>
+      <div class="top-actions">
+        <span class="status-pill">Salvo neste dispositivo</span>
+        <button class="button button-ghost" id="resetTop" type="button">Recomeçar</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="progress-wrap" aria-label="Progresso do currículo">
+        <div class="progress-meta"><span id="progressName">Apresentação</span><span id="progressCount">1 de 8</span></div>
+        <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+      </div>
+
+      <section class="workspace" aria-live="polite">
+        <div class="dot-field" aria-hidden="true"></div>
+
+        <article class="step active" id="step-0" data-name="Apresentação">
+          <div class="intro-layout">
+            <div>
+              <span class="eyebrow">Gerador de currículo</span>
+              <h1>Seu futuro começa com um <em>bom currículo.</em></h1>
+              <p class="lead">Preencha cada etapa com calma. Ao final, você poderá revisar, baixar em PDF ou Word e preparar o envio por e-mail.</p>
+              <button class="button button-primary" type="button" data-next>Começar agora <span aria-hidden="true">→</span></button>
+            </div>
+            <aside class="intro-card">
+              <h2>Simples, profissional e seguro</h2>
+              <p>O modelo foi pensado para facilitar a leitura e manter apenas as informações que recrutadores realmente precisam.</p>
+              <ul class="intro-list">
+                <li><b>1</b> Sem foto, CPF ou RG</li>
+                <li><b>2</b> Preferencialmente em uma página</li>
+                <li><b>3</b> Seus dados ficam neste dispositivo</li>
+              </ul>
+            </aside>
+          </div>
+        </article>
+
+        <article class="step" id="step-1" data-name="Dados pessoais">
+          <div class="step-layout">
+            <div class="step-main">
+              <span class="eyebrow">Etapa 1</span>
+              <h2 class="step-title">Vamos começar pelos seus dados.</h2>
+              <p class="step-description">Informe apenas os dados necessários para que uma empresa consiga identificar e entrar em contato com você.</p>
+              <div class="form-grid">
+                <div class="field full"><label for="fullName">Nome completo *</label><input id="fullName" name="fullName" autocomplete="name" maxlength="80" placeholder="Ex.: Maria Aparecida da Silva" required></div>
+                <div class="field"><label for="age">Idade *</label><input id="age" name="age" inputmode="numeric" maxlength="2" placeholder="Ex.: 18" required></div>
+                <div class="field"><label for="phone">Celular *</label><input id="phone" name="phone" autocomplete="tel" inputmode="tel" maxlength="16" placeholder="(11) 99999-9999" required></div>
+                <div class="field"><label for="email">E-mail *</label><input id="email" name="email" type="email" autocomplete="email" maxlength="90" placeholder="nome@email.com" required></div>
+                <div class="field"><label for="linkedin">LinkedIn</label><input id="linkedin" name="linkedin" maxlength="110" placeholder="linkedin.com/in/seunome"></div>
+                <div class="field"><label for="district">Bairro *</label><input id="district" name="district" maxlength="60" placeholder="Ex.: Veleiros" required></div>
+                <div class="field"><label for="state">Estado *</label><select id="state" name="state" data-tab-example="SP" required><option value="">Selecione</option><option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option><option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option><option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option><option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option><option>SP</option><option>SE</option><option>TO</option></select></div>
+              </div>
+            </div>
+            <aside class="step-aside tip-card"><span class="tip-icon">i</span><h3>Proteja seus dados</h3><p>Não informe CPF, RG, endereço completo ou CEP. Bairro e estado são suficientes para o currículo.</p></aside>
+          </div>
+        </article>
+
+        <article class="step" id="step-2" data-name="Objetivo profissional">
+          <div class="step-layout">
+            <div class="step-main">
+              <span class="eyebrow">Etapa 2</span>
+              <h2 class="step-title">Qual é o seu objetivo?</h2>
+              <p class="step-description">O objetivo deve ser direto e combinar com a vaga ou com o momento da sua carreira.</p>
+              <div class="choice-grid" role="radiogroup" aria-label="Situação profissional">
+                <div class="choice"><input type="radio" id="firstJob" name="profileMode" value="first" checked><label for="firstJob"><strong>Busco o primeiro emprego</strong><span>Usaremos uma sugestão adequada para quem está começando.</span></label></div>
+                <div class="choice"><input type="radio" id="specificJob" name="profileMode" value="specific"><label for="specificJob"><strong>Tenho uma vaga ou área em mente</strong><span>Escreva o cargo, a área ou uma breve apresentação.</span></label></div>
+              </div>
+              <div class="field full"><label for="objective">Objetivo profissional * <span class="counter" id="objectiveCounter">0/300</span></label><textarea id="objective" maxlength="300" required></textarea><small>Você pode editar livremente o texto sugerido.</small></div>
+              <button class="suggest-trigger" type="button" data-open-suggestions="objective">Ver sugestões de objetivo</button>
+            </div>
+            <aside class="step-aside tip-card"><span class="tip-icon">✓</span><h3>Seja específico</h3><p>Evite frases muito longas. Um bom objetivo ocupa de duas a quatro linhas no currículo final.</p></aside>
+          </div>
+        </article>
+
+        <article class="step" id="step-3" data-name="Formação acadêmica">
+          <div class="step-layout">
+            <div class="step-main">
+              <span class="eyebrow">Etapa 3</span>
+              <h2 class="step-title">Conte sobre sua formação.</h2>
+              <p class="step-description">Comece pela formação mais recente. Você pode incluir ensino médio, técnico ou superior.</p>
+              <div class="repeat-list" id="educationList"></div>
+              <div class="button-row"><button class="button button-secondary" id="addEducation" type="button">+ Adicionar formação</button><button class="button button-ghost" id="noEducation" type="button">Não tenho formação</button></div>
+            </div>
+            <aside class="step-aside tip-card"><span class="tip-icon">i</span><h3>Ainda está estudando?</h3><p>Informe “Cursando” e a previsão de conclusão. Não é necessário esperar terminar para colocar no currículo.</p></aside>
+          </div>
+        </article>
+
+        <article class="step" id="step-4" data-name="Experiência">
+          <div class="step-layout">
+            <div class="step-main">
+              <span class="eyebrow">Etapa 4</span>
+              <h2 class="step-title">Suas experiências também contam.</h2>
+              <p class="step-description">Além de empregos, você pode mencionar trabalho voluntário, projetos, TCC, atividades escolares ou ações comunitárias.</p>
+              <div class="repeat-list" id="experienceList"></div>
+              <div class="button-row"><button class="button button-secondary" id="addExperience" type="button">+ Adicionar experiência</button></div>
+            </div>
+            <aside class="step-aside tip-card"><span class="tip-icon">★</span><h3>Primeiro emprego</h3><p>Descreva o que você realizou e quais habilidades utilizou. Projetos de curso e voluntariado são experiências válidas.</p></aside>
+          </div>
+        </article>
+
+        <article class="step" id="step-5" data-name="Habilidades">
+          <div class="step-layout">
+            <div class="step-main">
+              <span class="eyebrow">Etapa 5</span>
+              <h2 class="step-title">O que você sabe fazer bem?</h2>
+              <p class="step-description">Separe conhecimentos técnicos de características comportamentais. Digite uma habilidade por linha.</p>
+              <div class="form-grid">
+                <div class="field"><label for="hardSkills">Habilidades técnicas * <span class="counter" id="hardCounter">0/6</span></label><textarea id="hardSkills" maxlength="240" placeholder="Pacote Office&#10;Excel intermediário&#10;Atendimento ao cliente" required></textarea><small>Conhecimentos que podem ser aprendidos e demonstrados.</small><button class="suggest-trigger" type="button" data-open-suggestions="hardSkills">Ver sugestões técnicas</button></div>
+                <div class="field"><label for="softSkills">Habilidades comportamentais * <span class="counter" id="softCounter">0/6</span></label><textarea id="softSkills" maxlength="240" placeholder="Trabalho em equipe&#10;Organização&#10;Resolução de problemas" required></textarea><small>Características que mostram como você trabalha e se relaciona.</small><button class="suggest-trigger" type="button" data-open-suggestions="softSkills">Ver sugestões comportamentais</button></div>
+              </div>
+            </div>
+            <aside class="step-aside tip-card"><span class="tip-icon">6</span><h3>Escolha até seis</h3><p>Priorize habilidades relacionadas às vagas desejadas. Qualidade e clareza são melhores do que uma lista enorme.</p></aside>
+          </div>
+        </article>
+
+        <article class="step" id="step-6" data-name="Cursos complementares">
+          <div class="step-layout">
+            <div class="step-main">
+              <span class="eyebrow">Etapa 6</span>
+              <h2 class="step-title">Inclua seus cursos.</h2>
+              <p class="step-description">Adicione cursos com certificado, como inglês, informática e capacitações profissionais.</p>
+              <div class="repeat-list" id="courseList"></div>
+              <div class="button-row"><button class="button button-secondary" id="addCourse" type="button">+ Adicionar curso</button></div>
+            </div>
+            <aside class="step-aside tip-card"><span class="tip-icon">i</span><h3>Informações importantes</h3><p>Quando possível, informe instituição, nível, conclusão e carga horária do certificado.</p></aside>
+          </div>
+        </article>
+
+        <article class="step" id="step-7" data-name="Revisão e download">
+          <div class="review-layout">
+            <div class="review-panel">
+              <span class="eyebrow">Currículo pronto</span>
+              <h2>Revise e edite seu currículo.</h2>
+              <p>Confira o resultado final e faça os últimos ajustes diretamente no documento.</p>
+              <div class="edit-tip"><strong>Editor visual</strong>Clique no texto para escrever. Use “Mover” para arrastar e o quadrado azul para redimensionar. Se faltar espaço, a segunda folha aparecerá automaticamente.</div>
+              <div class="design-toolbar">
+                <button class="button button-secondary" id="addTextBox" type="button">+ Adicionar caixa de texto</button>
+                <div class="alignment-actions" aria-label="Alinhamento horizontal">
+                  <button type="button" data-align-object="left">À esquerda</button>
+                  <button type="button" data-align-object="center">Centralizar</button>
+                  <button type="button" data-align-object="right">À direita</button>
+                </div>
+                <div class="alignment-actions" aria-label="Alinhamento vertical">
+                  <button type="button" data-align-object="top">No topo</button>
+                  <button type="button" data-align-object="middle">No meio</button>
+                  <button type="button" data-align-object="bottom">Na base</button>
+                </div>
+                <button class="button button-ghost" id="resetLayout" type="button">Restaurar posições</button>
+              </div>
+              <div class="quality-box">
+                <div class="quality-item"><b>✓</b><span>Sem foto ou documentos pessoais</span></div>
+                <div class="quality-item"><b>✓</b><span>Paginação automática em folhas A4</span></div>
+                <div class="quality-item"><b>✓</b><span>Modelo minimalista em cinza-carvão</span></div>
+              </div>
+              <div class="button-row">
+                <button class="button button-primary" id="downloadPdf" type="button">Baixar PDF</button>
+                <button class="button button-secondary" id="downloadWord" type="button">Baixar Word</button>
+              </div>
+              <div class="email-box">
+                <h3>Enviar por e-mail</h3>
+                <p>O currículo será enviado em PDF por curriculos.insf@gmail.com.</p>
+                <div class="email-inline"><input id="sendEmail" type="email" placeholder="destinatario@email.com" autocomplete="email" required aria-label="E-mail do destinatário"><button class="button button-yellow" id="sendResumeEmail" type="button">Enviar currículo</button></div>
+              </div>
+            </div>
+
+            <div class="paper-stage" id="paperStage">
+              <section class="resume-paper" id="resumePaper" aria-label="Pré-visualização do currículo">
+                <div class="resume-object resume-name-object" data-resume-object="header.name"><h1 class="resume-name resume-editable" id="resumeName" contenteditable="true" spellcheck="true" data-resume-key="fullName" aria-label="Editar nome completo">SEU NOME COMPLETO</h1></div>
+                <div class="resume-contact resume-object" id="resumeContact" data-resume-object="header.contact"></div>
+                <section class="resume-objective resume-object" id="resumeObjectiveSection" data-resume-object="section.objective"><h2 class="resume-objective-title">Objetivo</h2><div class="resume-objective-content" id="resumeObjective"></div></section>
+                <div class="resume-grid" id="resumeGrid">
+                  <aside class="resume-sidebar" id="resumeSidebar"></aside>
+                  <div class="resume-main" id="resumeMain"></div>
+                </div>
+                <div class="resume-single" id="resumeSingle" hidden></div>
+              </section>
+              <section class="resume-paper resume-page-2" id="resumePaper2" aria-label="Segunda página do currículo" hidden>
+                <div class="resume-continuation" id="resumeContinuation">CURRÍCULO · CONTINUAÇÃO</div>
+                <div class="resume-page2-content" id="resumePage2Content"></div>
+              </section>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <nav class="footer-nav" aria-label="Navegação entre etapas">
+      <button class="button button-secondary" id="prevButton" type="button" disabled><span aria-hidden="true">←</span> Voltar</button>
+      <div class="step-dots" id="stepDots" aria-label="Etapas"></div>
+      <button class="button button-primary" id="nextButton" type="button">Continuar <span aria-hidden="true">→</span></button>
+    </nav>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="suggestion-modal" id="suggestionModal" role="dialog" aria-modal="true" aria-labelledby="suggestionTitle" hidden>
+    <section class="suggestion-dialog">
+      <header class="suggestion-head">
+        <div><span class="eyebrow">Ideias para começar</span><h2 id="suggestionTitle">Escolha uma sugestão</h2><p id="suggestionDescription">Use como ponto de partida e adapte para representar sua experiência.</p></div>
+        <button class="suggestion-close" type="button" data-close-suggestions aria-label="Fechar sugestões">×</button>
+      </header>
+      <div class="suggestion-grid" id="suggestionCards"></div>
+    </section>
+  </div>
+
+  <script>
+    (() => {
+      const STORAGE_KEY = "nsf-curriculo-v1";
+      const LEGACY_STORAGE_KEY = "nsf-curriculo-teste-v1";
+      const FIRST_OBJECTIVE = "Ingressar no mercado de trabalho para adquirir experiência e desenvolver habilidades profissionais.";
+      const SPECIFIC_OBJECTIVE = "Atuar na área de [área ou cargo pretendido], contribuindo com minhas habilidades e desenvolvendo novos conhecimentos profissionais.";
+      const SUGGESTION_SETS = {
+        objective: {
+          title: "Sugestões de objetivo profissional",
+          description: "Escolha a opção mais próxima do seu momento e substitua o que estiver entre colchetes.",
+          cards: [
+            { title: "Primeiro emprego", tag: "Início de carreira", text: "Ingressar no mercado de trabalho para adquirir experiência e desenvolver habilidades profissionais." },
+            { title: "Jovem Aprendiz ou estágio", tag: "Formação", text: "Atuar como Jovem Aprendiz ou estagiário, colocando em prática meus conhecimentos e desenvolvendo novas competências profissionais." },
+            { title: "Área administrativa", tag: "Administrativo", text: "Atuar na área administrativa, apoiando a organização de informações, documentos e rotinas da equipe." },
+            { title: "Atendimento", tag: "Público e vendas", text: "Atuar com atendimento ao cliente, contribuindo com boa comunicação, organização e atenção às necessidades do público." },
+            { title: "Tecnologia e informática", tag: "Digital", text: "Atuar na área de tecnologia ou informática, aplicando meus conhecimentos e ampliando minha experiência profissional." },
+            { title: "Operacional e logística", tag: "Operacional", text: "Atuar na área operacional ou de logística, colaborando com organização, agilidade e cumprimento de procedimentos." }
+          ]
+        },
+        experience: {
+          title: "Sugestões para descrever atividades",
+          description: "Selecione um texto inicial e ajuste para contar somente o que você realmente realizou.",
+          cards: [
+            { title: "Atendimento ao público", tag: "Atendimento", text: "Realizei atendimento e orientação ao público, mantendo uma comunicação clara e buscando solucionar dúvidas com atenção." },
+            { title: "Apoio administrativo", tag: "Escritório", text: "Apoiei a organização de documentos, atualização de informações e execução de rotinas administrativas da equipe." },
+            { title: "Eventos e atividades", tag: "Organização", text: "Colaborei na organização de materiais, recepção dos participantes e apoio às atividades realizadas pela equipe." },
+            { title: "Projeto escolar ou TCC", tag: "Acadêmico", text: "Participei do planejamento e desenvolvimento do projeto, realizando pesquisas, organizando informações e apresentando os resultados." },
+            { title: "Trabalho voluntário", tag: "Comunidade", text: "Atuei de forma voluntária no apoio às atividades, desenvolvendo responsabilidade, colaboração e contato com diferentes pessoas." },
+            { title: "Atividade operacional", tag: "Operacional", text: "Auxiliei na separação, conferência e organização de materiais, seguindo orientações e mantendo o ambiente organizado." }
+          ]
+        },
+        hardSkills: {
+          title: "Sugestões de habilidades técnicas",
+          description: "Cada card adiciona conhecimentos comuns ao campo. Mantenha apenas aquilo que você realmente sabe fazer.",
+          cards: [
+            { title: "Ferramentas de escritório", tag: "Informática", text: "Pacote Office\nExcel básico\nGoogle Workspace" },
+            { title: "Atendimento", tag: "Público", text: "Atendimento ao cliente\nComunicação por telefone e e-mail\nRegistro de informações" },
+            { title: "Rotinas administrativas", tag: "Administrativo", text: "Organização de documentos\nPreenchimento de planilhas\nArquivo e controle de informações" },
+            { title: "Conhecimentos digitais", tag: "Digital", text: "Informática básica\nDigitação\nUso de e-mail e internet" },
+            { title: "Logística e estoque", tag: "Operacional", text: "Separação e conferência de materiais\nControle de estoque\nCumprimento de procedimentos" },
+            { title: "Comunicação e conteúdo", tag: "Criativo", text: "Redes sociais\nCriação de apresentações\nEdição básica de imagens" }
+          ]
+        },
+        softSkills: {
+          title: "Sugestões de habilidades comportamentais",
+          description: "Escolha características que combinam com você e que possam ser demonstradas em exemplos reais.",
+          cards: [
+            { title: "Trabalho em equipe", tag: "Colaboração", text: "Trabalho em equipe\nBoa comunicação\nRespeito" },
+            { title: "Organização", tag: "Responsabilidade", text: "Organização\nPontualidade\nResponsabilidade" },
+            { title: "Iniciativa", tag: "Desenvolvimento", text: "Proatividade\nAprendizado rápido\nCuriosidade" },
+            { title: "Resolução de problemas", tag: "Resultados", text: "Resolução de problemas\nAtenção aos detalhes\nTomada de iniciativa" },
+            { title: "Atendimento humano", tag: "Relacionamento", text: "Empatia\nPaciência\nEscuta ativa" },
+            { title: "Adaptação", tag: "Flexibilidade", text: "Adaptabilidade\nFlexibilidade\nComprometimento" }
+          ]
+        }
+      };
+      const stepNames = ["Apresentação", "Dados pessoais", "Objetivo profissional", "Formação acadêmica", "Experiência", "Habilidades", "Cursos complementares", "Revisão e download"];
+      const emptyEducation = () => ({ level: "Ensino médio", institution: "", course: "", status: "Cursando", completion: "", workload: "" });
+      const emptyExperience = () => ({ type: "Trabalho voluntário", organization: "", role: "", period: "", description: "" });
+      const emptyCourse = () => ({ name: "", institution: "", level: "", completion: "", workload: "" });
+      const initialState = {
+        step: 0,
+        fullName: "", age: "", phone: "", email: "", linkedin: "", district: "", state: "",
+        profileMode: "first", objective: FIRST_OBJECTIVE,
+        education: [emptyEducation()], noEducation: false, experiences: [emptyExperience()],
+        hardSkills: "", softSkills: "", courses: [emptyCourse()],
+        skippedFields: {}, resumeEdits: {}, layoutEdits: {}, customTextBoxes: []
+      };
+      let state = loadState();
+      let toastTimer;
+      let suggestionContext = null;
+      let tabExampleHintShown = false;
+      let activeObjectGesture = null;
+      let selectedResumeObject = null;
+
+      const $ = (selector, root = document) => root.querySelector(selector);
+      const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+      const escapeHtml = (value = "") => String(value).replace(/[&<>'"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
+      const cleanLines = value => String(value || "").split(/\n|,/).map(v => v.trim()).filter(Boolean).slice(0, 6);
+      const resumeValue = (key, fallback = "") => Object.prototype.hasOwnProperty.call(state.resumeEdits || {}, key) ? state.resumeEdits[key] : fallback;
+      const resumeEditable = (key, value, className = "", multiline = false, tag = "div", label = "texto") => `<${tag} class="${className ? `${className} ` : ""}resume-editable" contenteditable="true" spellcheck="true" data-resume-key="${escapeHtml(key)}"${multiline ? ' data-resume-multiline="true"' : ""} role="textbox" aria-label="Editar ${escapeHtml(label)}">${escapeHtml(resumeValue(key, value))}</${tag}>`;
+      const fileName = () => (state.fullName || "curriculo").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "").toLowerCase() || "curriculo";
+
+      function loadState() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY));
+          return saved ? { ...structuredClone(initialState), ...saved } : structuredClone(initialState);
+        } catch { return structuredClone(initialState); }
+      }
+
+      function saveState() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+
+      function getControlKey(control) {
+        const card = control.closest("[data-group][data-index]");
+        if (card && control.dataset.field) return `${card.dataset.group}.${card.dataset.index}.${control.dataset.field}`;
+        return control.id ? `field.${control.id}` : "";
+      }
+
+      function isControlSkipped(control) {
+        const key = getControlKey(control);
+        return !!(key && state.skippedFields?.[key]);
+      }
+
+      function controlSupportsAbsence(control) {
+        const protectedPersonalFields = new Set(["fullName", "age", "phone", "email", "district", "state"]);
+        if (protectedPersonalFields.has(control.id)) return false;
+        const group = control.closest("[data-group]")?.dataset.group;
+        return group !== "education" && group !== "experiences" && group !== "courses";
+      }
+
+      function setControlModelValue(control, value) {
+        const card = control.closest("[data-group][data-index]");
+        if (card && control.dataset.field) {
+          state[card.dataset.group][Number(card.dataset.index)][control.dataset.field] = value;
+        } else if (control.id && Object.prototype.hasOwnProperty.call(state, control.id)) {
+          state[control.id] = value;
+        }
+      }
+
+      function applySkippedPresentation(field, control, button) {
+        const skipped = isControlSkipped(control);
+        field.classList.toggle("is-absent", skipped);
+        control.disabled = skipped;
+        button.classList.toggle("active", skipped);
+        button.textContent = skipped ? "Voltar a preencher" : "Não tenho";
+        button.setAttribute("aria-pressed", String(skipped));
+        button.setAttribute("aria-label", skipped ? "Voltar a preencher este campo" : "Marcar que não possui esta informação");
+      }
+
+      function decorateFields(root = document) {
+        state.skippedFields ||= {};
+        $$(".field", root).forEach(field => {
+          const control = $(":scope > input:not([type=radio]):not([type=checkbox]), :scope > select, :scope > textarea", field);
+          if (!control) return;
+          const key = getControlKey(control);
+          if (!key) return;
+          if (!controlSupportsAbsence(control)) {
+            delete state.skippedFields[key];
+            control.disabled = false;
+            field.classList.remove("is-absent");
+            $(":scope > .absence-status", field)?.remove();
+            $(":scope > .absence-button", field)?.remove();
+            return;
+          }
+          let status = $(":scope > .absence-status", field);
+          if (!status) {
+            status = document.createElement("span");
+            status.className = "absence-status";
+            status.textContent = "Informação não disponível";
+            control.insertAdjacentElement("afterend", status);
+          }
+          let button = $(":scope > .absence-button", field);
+          if (!button) {
+            button = document.createElement("button");
+            button.type = "button";
+            button.className = "absence-button";
+            button.dataset.toggleAbsence = "";
+            button.tabIndex = -1;
+            field.append(button);
+          }
+          applySkippedPresentation(field, control, button);
+        });
+      }
+
+      function toggleFieldAbsence(button) {
+        const field = button.closest(".field");
+        const control = field && $(":scope > input:not([type=radio]):not([type=checkbox]), :scope > select, :scope > textarea", field);
+        if (!control) return;
+        const key = getControlKey(control);
+        if (!key) return;
+        state.skippedFields ||= {};
+        if (state.skippedFields[key]) {
+          delete state.skippedFields[key];
+          control.disabled = false;
+          if (control.tagName === "SELECT" && !control.value) {
+            const firstOption = [...control.options].find(option => option.value);
+            if (firstOption) control.value = firstOption.value;
+          }
+          setControlModelValue(control, control.value);
+          applySkippedPresentation(field, control, button);
+          control.focus();
+        } else {
+          state.skippedFields[key] = true;
+          control.value = "";
+          setControlModelValue(control, "");
+          control.removeAttribute("aria-invalid");
+          applySkippedPresentation(field, control, button);
+        }
+        saveState();
+        updateCounters();
+        renderResume();
+      }
+
+      function applyTabExample(control) {
+        if (!control.matches("input:not([type=radio]):not([type=checkbox]), select, textarea") || control.disabled || String(control.value || "").trim()) return;
+        let example = control.dataset.tabExample || control.getAttribute("placeholder") || "";
+        example = example.replace(/^Ex\.:?\s*/i, "").trim();
+        if (!example) return;
+        if (control.tagName === "SELECT" && ![...control.options].some(option => option.value === example)) return;
+        control.value = example;
+        control.dispatchEvent(new Event("input", { bubbles: true }));
+        if (!tabExampleHintShown) {
+          tabExampleHintShown = true;
+          toast("Exemplo preenchido. Você pode editar o texto normalmente.");
+        }
+      }
+
+      function toast(message, error = false) {
+        const el = $("#toast");
+        el.textContent = message;
+        el.classList.toggle("error", error);
+        el.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("show"), 3400);
+      }
+
+      function openSuggestions(kind, index = null) {
+        const set = SUGGESTION_SETS[kind];
+        if (!set) return;
+        suggestionContext = { kind, index };
+        $("#suggestionTitle").textContent = set.title;
+        $("#suggestionDescription").textContent = set.description;
+        $("#suggestionCards").innerHTML = set.cards.map((card, cardIndex) => `<button class="suggestion-card" type="button" data-apply-suggestion="${cardIndex}"><strong>${escapeHtml(card.title)}</strong><span>${escapeHtml(card.text)}</span><small>${escapeHtml(card.tag)}</small></button>`).join("");
+        $("#suggestionModal").hidden = false;
+        document.body.style.overflow = "hidden";
+        $("[data-close-suggestions]").focus();
+      }
+
+      function closeSuggestions() {
+        $("#suggestionModal").hidden = true;
+        document.body.style.overflow = "";
+        suggestionContext = null;
+      }
+
+      function applySuggestion(cardIndex) {
+        if (!suggestionContext) return;
+        const { kind, index } = suggestionContext;
+        const card = SUGGESTION_SETS[kind]?.cards[cardIndex];
+        if (!card) return;
+        if (kind === "objective") {
+          state.objective = card.text;
+          $("#objective").value = card.text;
+        } else if (kind === "experience") {
+          state.experiences[index].description = card.text;
+          const experienceCard = $(`#experienceList [data-group="experiences"][data-index="${index}"]`);
+          if (experienceCard) $('[data-field="description"]', experienceCard).value = card.text;
+        } else {
+          const current = cleanLines(state[kind]);
+          const additions = cleanLines(card.text);
+          state[kind] = [...new Set([...current, ...additions])].slice(0, 6).join("\n");
+          $("#" + kind).value = state[kind];
+        }
+        const experienceCard = kind === "experience" ? $(`#experienceList [data-group="experiences"][data-index="${index}"]`) : null;
+        const targetControl = kind === "experience" && experienceCard
+          ? $(`[data-field="description"]`, experienceCard)
+          : $("#" + kind);
+        if (targetControl && isControlSkipped(targetControl)) {
+          delete state.skippedFields[getControlKey(targetControl)];
+          const targetField = targetControl.closest(".field");
+          const absenceButton = $(":scope > .absence-button", targetField);
+          if (absenceButton) applySkippedPresentation(targetField, targetControl, absenceButton);
+        }
+        saveState();
+        updateCounters();
+        renderResume();
+        closeSuggestions();
+        toast("Sugestão adicionada. Edite o texto para deixar o currículo com a sua cara.");
+      }
+
+      function populateFields() {
+        ["fullName","age","phone","email","linkedin","district","state","objective","hardSkills","softSkills"].forEach(id => {
+          const el = $("#" + id);
+          if (el) el.value = state[id] || "";
+        });
+        const mode = $(state.profileMode === "specific" ? "#specificJob" : "#firstJob");
+        if (mode) mode.checked = true;
+      }
+
+      function educationTemplate(item, index) {
+        return `<section class="repeat-card" data-group="education" data-index="${index}">
+          <div class="repeat-card-head"><h3>Formação ${index + 1}</h3>${state.education.length > 1 ? `<button class="remove-button" type="button" data-remove="education" data-index="${index}">Remover</button>` : ""}</div>
+          <div class="form-grid">
+            <div class="field"><label>Nível *</label><select data-field="level"><option${item.level === "Ensino médio" ? " selected" : ""}>Ensino médio</option><option${item.level === "Ensino técnico" ? " selected" : ""}>Ensino técnico</option><option${item.level === "Ensino superior" ? " selected" : ""}>Ensino superior</option></select></div>
+            <div class="field"><label>Instituição *</label><input data-field="institution" data-tab-example="Escola Estadual Maria da Silva" maxlength="90" value="${escapeHtml(item.institution)}" placeholder="Nome da escola ou instituição"></div>
+            <div class="field"><label>Curso</label><input data-field="course" data-tab-example="Administração" maxlength="80" value="${escapeHtml(item.course)}" placeholder="Ex.: Administração"></div>
+            <div class="field"><label>Situação *</label><select data-field="status"><option${item.status === "Cursando" ? " selected" : ""}>Cursando</option><option${item.status === "Concluído" ? " selected" : ""}>Concluído</option><option${item.status === "Trancado" ? " selected" : ""}>Trancado</option></select></div>
+            <div class="field"><label>Conclusão ou previsão *</label><input data-field="completion" data-tab-example="dezembro de 2026" maxlength="30" value="${escapeHtml(item.completion)}" placeholder="Ex.: dezembro de 2026"></div>
+            <div class="field"><label>Carga horária</label><input data-field="workload" data-tab-example="1.200 horas" maxlength="30" value="${escapeHtml(item.workload)}" placeholder="Ex.: 1.200 horas"></div>
+          </div>
+        </section>`;
+      }
+
+      function experienceTemplate(item, index) {
+        return `<section class="repeat-card" data-group="experiences" data-index="${index}">
+          <div class="repeat-card-head"><h3>Experiência ${index + 1}</h3><button class="remove-button" type="button" data-remove="experiences" data-index="${index}">Remover</button></div>
+          <div class="form-grid">
+            <div class="field"><label>Tipo</label><select data-field="type"><option${item.type === "Experiência profissional" ? " selected" : ""}>Experiência profissional</option><option${item.type === "Trabalho voluntário" ? " selected" : ""}>Trabalho voluntário</option><option${item.type === "Projeto ou TCC" ? " selected" : ""}>Projeto ou TCC</option><option${item.type === "Atividade escolar" ? " selected" : ""}>Atividade escolar</option></select></div>
+            <div class="field"><label>Empresa ou organização *</label><input data-field="organization" data-tab-example="Instituto Social Nossa Senhora de Fátima" maxlength="80" value="${escapeHtml(item.organization)}" placeholder="Nome da empresa, escola ou projeto"></div>
+            <div class="field"><label>Cargo ou atividade *</label><input data-field="role" data-tab-example="Auxiliar administrativo" maxlength="70" value="${escapeHtml(item.role)}" placeholder="Ex.: Auxiliar administrativo"></div>
+            <div class="field"><label>Período</label><input data-field="period" data-tab-example="março a novembro de 2025" maxlength="40" value="${escapeHtml(item.period)}" placeholder="Ex.: março a novembro de 2025"></div>
+            <div class="field full"><label>Principais atividades e resultados * <span class="counter">até 300 caracteres</span></label><textarea data-field="description" data-tab-example="Apoiei a organização de documentos e o atendimento ao público, desenvolvendo responsabilidade e boa comunicação." maxlength="300" placeholder="Descreva o que você fez, aprendeu ou entregou.">${escapeHtml(item.description)}</textarea><button class="suggest-trigger" type="button" data-open-suggestions="experience" data-index="${index}">Ver sugestões de atividades</button></div>
+          </div>
+        </section>`;
+      }
+
+      function courseTemplate(item, index) {
+        return `<section class="repeat-card" data-group="courses" data-index="${index}">
+          <div class="repeat-card-head"><h3>Curso ${index + 1}</h3><button class="remove-button" type="button" data-remove="courses" data-index="${index}">Remover</button></div>
+          <div class="form-grid">
+            <div class="field"><label>Nome do curso *</label><input data-field="name" data-tab-example="Informática" maxlength="80" value="${escapeHtml(item.name)}" placeholder="Ex.: Informática"></div>
+            <div class="field"><label>Instituição *</label><input data-field="institution" data-tab-example="SENAI" maxlength="80" value="${escapeHtml(item.institution)}" placeholder="Nome da instituição"></div>
+            <div class="field"><label>Nível</label><input data-field="level" data-tab-example="Intermediário" maxlength="40" value="${escapeHtml(item.level)}" placeholder="Ex.: Intermediário"></div>
+            <div class="field"><label>Conclusão</label><input data-field="completion" data-tab-example="julho de 2026" maxlength="30" value="${escapeHtml(item.completion)}" placeholder="Ex.: julho de 2026"></div>
+            <div class="field"><label>Carga horária</label><input data-field="workload" data-tab-example="40 horas" maxlength="30" value="${escapeHtml(item.workload)}" placeholder="Ex.: 40 horas"></div>
+          </div>
+        </section>`;
+      }
+
+      function renderRepeaters() {
+        $("#educationList").innerHTML = state.education.map(educationTemplate).join("");
+        $("#educationList").classList.toggle("section-disabled", state.noEducation);
+        $("#experienceList").innerHTML = state.experiences.length ? state.experiences.map(experienceTemplate).join("") : `<div class="tip-card"><h3>Nenhuma experiência adicionada</h3><p>Use o botão “Adicionar experiência” caso queira incluir uma experiência profissional, acadêmica ou voluntária.</p></div>`;
+        $("#courseList").innerHTML = state.courses.length ? state.courses.map(courseTemplate).join("") : `<div class="tip-card"><h3>Nenhum curso adicionado</h3><p>Use o botão “Adicionar curso” caso queira incluir um curso complementar.</p></div>`;
+        $("#noEducation").textContent = state.noEducation ? "Adicionar uma formação" : "Não tenho formação";
+        $("#addEducation").hidden = state.noEducation;
+        decorateFields();
+        $$("#educationList input, #educationList select, #educationList textarea, #educationList [data-remove]").forEach(control => { control.disabled = state.noEducation; });
+      }
+
+      function updateFromField(event) {
+        const el = event.target;
+        if (el.name === "profileMode") {
+          state.profileMode = el.value;
+          const objectiveControl = $("#objective");
+          if (isControlSkipped(objectiveControl)) {
+            delete state.skippedFields[getControlKey(objectiveControl)];
+            const objectiveField = objectiveControl.closest(".field");
+            const absenceButton = $(":scope > .absence-button", objectiveField);
+            if (absenceButton) applySkippedPresentation(objectiveField, objectiveControl, absenceButton);
+          }
+          const currentIsSuggestion = [FIRST_OBJECTIVE, SPECIFIC_OBJECTIVE, ""].includes(state.objective);
+          if (currentIsSuggestion) state.objective = state.profileMode === "first" ? FIRST_OBJECTIVE : SPECIFIC_OBJECTIVE;
+          $("#objective").value = state.objective;
+        } else if (el.id && Object.prototype.hasOwnProperty.call(state, el.id)) {
+          state[el.id] = el.value;
+        }
+        el.removeAttribute("aria-invalid");
+        saveState();
+        updateCounters();
+        renderResume();
+      }
+
+      function updateRepeater(event) {
+        const field = event.target.dataset.field;
+        if (!field) return;
+        const card = event.target.closest("[data-group]");
+        if (!card) return;
+        const group = card.dataset.group;
+        const index = Number(card.dataset.index);
+        state[group][index][field] = event.target.value;
+        event.target.removeAttribute("aria-invalid");
+        saveState();
+        renderResume();
+      }
+
+      function updateCounters() {
+        $("#objectiveCounter").textContent = `${state.objective.length}/300`;
+        $("#hardCounter").textContent = `${cleanLines(state.hardSkills).length}/6`;
+        $("#softCounter").textContent = `${cleanLines(state.softSkills).length}/6`;
+      }
+
+      function validateStep(step) {
+        const required = {
+          1: ["fullName","age","phone","email","district","state"],
+          2: ["objective"],
+          5: ["hardSkills","softSkills"]
+        }[step] || [];
+        let firstInvalid = null;
+        required.forEach(id => {
+          const el = $("#" + id);
+          const invalid = !isControlSkipped(el) && (!String(state[id] || "").trim() || (id === "email" && !el.checkValidity()));
+          el.setAttribute("aria-invalid", invalid ? "true" : "false");
+          if (invalid && !firstInvalid) firstInvalid = el;
+        });
+        if (step === 3 && !state.noEducation) {
+          $$("#educationList [data-group=\"education\"][data-index]").forEach(card => {
+            ["institution","completion"].forEach(field => {
+              const el = $(`[data-field="${field}"]`, card);
+              const invalid = !isControlSkipped(el) && !el.value.trim();
+              el.setAttribute("aria-invalid", invalid ? "true" : "false");
+              if (invalid && !firstInvalid) firstInvalid = el;
+            });
+          });
+        }
+        if (step === 4) {
+          $$("#experienceList [data-group=\"experiences\"][data-index]").forEach(card => {
+            ["organization","role","description"].forEach(field => {
+              const el = $(`[data-field="${field}"]`, card);
+              const invalid = !isControlSkipped(el) && !el.value.trim();
+              el.setAttribute("aria-invalid", invalid ? "true" : "false");
+              if (invalid && !firstInvalid) firstInvalid = el;
+            });
+          });
+        }
+        if (step === 6) {
+          $$("#courseList [data-group=\"courses\"][data-index]").forEach(card => {
+            ["name","institution"].forEach(field => {
+              const el = $(`[data-field="${field}"]`, card);
+              const invalid = !isControlSkipped(el) && !el.value.trim();
+              el.setAttribute("aria-invalid", invalid ? "true" : "false");
+              if (invalid && !firstInvalid) firstInvalid = el;
+            });
+          });
+        }
+        if (firstInvalid) {
+          firstInvalid.focus();
+          toast("Revise os campos destacados antes de continuar.", true);
+          return false;
+        }
+        return true;
+      }
+
+      function goToStep(next, force = false) {
+        if (!force && next > state.step && !validateStep(state.step)) return;
+        state.step = Math.max(0, Math.min(7, next));
+        saveState();
+        updateStepUI();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function updateStepUI() {
+        $$(".step").forEach((el, index) => el.classList.toggle("active", index === state.step));
+        $("#progressName").textContent = stepNames[state.step];
+        $("#progressCount").textContent = `${state.step + 1} de 8`;
+        $("#progressBar").style.width = `${((state.step + 1) / 8) * 100}%`;
+        $("#prevButton").disabled = state.step === 0;
+        $("#nextButton").hidden = state.step === 7;
+        $("#prevButton").innerHTML = state.step === 0 ? "← Voltar" : "← Voltar";
+        $$(".step-dot").forEach((el, index) => el.classList.toggle("active", index === state.step));
+        if (state.step === 7) setTimeout(checkOverflow, 80);
+      }
+
+      function renderDots() {
+        $("#stepDots").innerHTML = stepNames.map((name, index) => `<button class="step-dot${index === state.step ? " active" : ""}" type="button" data-step="${index}" aria-label="Ir para ${name}" title="${name}"></button>`).join("");
+      }
+
+      function valueOr(value, fallback = "Não informado") { return String(value || "").trim() || fallback; }
+      function formatLocation() { return [state.district, state.state].filter(Boolean).join(" - "); }
+
+      function getResumeDensity() {
+        const educationCount = state.noEducation ? 0 : state.education.filter(item => item.institution || item.course).length;
+        const experienceItems = state.experiences.filter(item => item.organization || item.role || item.description);
+        const courseCount = state.courses.filter(item => item.name || item.institution).length;
+        const skillCount = cleanLines(state.hardSkills).length + cleanLines(state.softSkills).length;
+        const textVolume = String(state.objective || "").length + experienceItems.reduce((total, item) => total + String(item.description || "").length, 0);
+        const contentScore = educationCount * 1.25 + experienceItems.length * 1.8 + courseCount + skillCount * .32 + textVolume / 260;
+        if (contentScore <= 5.4) return "sparse";
+        return "balanced";
+      }
+
+      function applyResumeDensity() {
+        const density = getResumeDensity();
+        $$(".resume-paper", $("#paperStage")).forEach(paper => {
+          paper.classList.remove("density-sparse", "density-balanced", "density-dense");
+          paper.classList.add(`density-${density}`);
+        });
+      }
+
+      function renderResume() {
+        restoreStaticResumeObjects();
+        $("#resumePage2Content").innerHTML = "";
+        $("#resumeName").textContent = resumeValue("fullName", state.fullName || "SEU NOME COMPLETO");
+        $("#resumeContinuation").textContent = `${resumeValue("fullName", state.fullName || "CURRÍCULO")} · CONTINUAÇÃO`;
+        const contact = [];
+        if (formatLocation()) contact.push(["contact.location", formatLocation(), "localização"]);
+        if (state.phone) contact.push(["contact.phone", state.phone, "celular"]);
+        if (state.age) contact.push(["contact.age", `${state.age} anos`, "idade"]);
+        if (state.email) contact.push(["contact.email", state.email, "e-mail"]);
+        if (state.linkedin) contact.push(["contact.linkedin", state.linkedin.replace(/^https?:\/\//i, ""), "LinkedIn"]);
+        $("#resumeContact").innerHTML = contact.map(([key, value, label]) => resumeEditable(key, value, "resume-contact-group", false, "div", label)).join("");
+        const objectiveText = resumeValue("objective", state.objective || "");
+        $("#resumeObjectiveSection").hidden = !String(objectiveText).trim();
+        $("#resumeObjective").innerHTML = objectiveText ? resumeEditable("objective", state.objective, "", true, "p", "objetivo profissional") : "";
+
+        const educationHtml = state.noEducation ? "" : state.education.map((item, index) => ({ item, index })).filter(({ item }) => item.institution || item.course).map(({ item, index }) => {
+          const title = [item.level, item.course].filter(Boolean).join(" — ");
+          const meta = [item.status, item.completion && `${item.status === "Concluído" ? "Concluído" : "Previsão"}: ${item.completion}`, item.workload].filter(Boolean).join(" · ");
+          return `<div class="resume-item">${resumeEditable(`education.${index}.title`, title || item.institution, "resume-item-title", false, "div", "formação")}${title && item.institution ? resumeEditable(`education.${index}.institution`, item.institution, "", false, "div", "instituição de ensino") : ""}${meta ? resumeEditable(`education.${index}.meta`, meta, "resume-item-meta", false, "div", "detalhes da formação") : ""}</div>`;
+        }).join("");
+
+        const experienceHtml = state.experiences.map((item, index) => ({ item, index })).filter(({ item }) => item.organization || item.role || item.description).map(({ item, index }) => {
+          const title = [item.role, item.organization].filter(Boolean).join(" · ");
+          const meta = [item.period, item.type].filter(Boolean).join(" — ");
+          return `<div class="resume-item">${resumeEditable(`experience.${index}.title`, title, "resume-item-title", false, "div", "cargo e organização")}${meta ? resumeEditable(`experience.${index}.meta`, meta, "resume-item-meta", false, "div", "período e tipo da experiência") : ""}${item.description ? resumeEditable(`experience.${index}.description`, item.description, "resume-item-description", true, "div", "descrição da experiência") : ""}</div>`;
+        }).join("");
+
+        const hardSkills = cleanLines(state.hardSkills);
+        const softSkills = cleanLines(state.softSkills);
+        const skillGroups = [];
+        if (hardSkills.length) skillGroups.push(`<div class="resume-skill-group"><strong>Técnicas</strong><ul class="resume-list">${hardSkills.map((skill, index) => resumeEditable(`hardSkills.${index}`, skill, "", false, "li", "habilidade técnica")).join("")}</ul></div>`);
+        if (softSkills.length) skillGroups.push(`<div class="resume-skill-group"><strong>Comportamentais</strong><ul class="resume-list">${softSkills.map((skill, index) => resumeEditable(`softSkills.${index}`, skill, "", false, "li", "habilidade comportamental")).join("")}</ul></div>`);
+        const skillsHtml = skillGroups.length ? `<div class="resume-skill-columns${skillGroups.length === 1 ? " one" : ""}">${skillGroups.join("")}</div>` : "";
+
+        const coursesHtml = state.courses.map((item, index) => ({ item, index })).filter(({ item }) => item.name || item.institution).map(({ item, index }) => {
+          const title = item.name || item.institution;
+          const meta = [item.level, item.completion && `Concluído em ${item.completion}`, item.workload].filter(Boolean).join(" · ");
+          return `<div class="resume-item">${resumeEditable(`course.${index}.title`, title, "resume-item-title", false, "div", "curso")}${item.name && item.institution ? resumeEditable(`course.${index}.institution`, item.institution, "", false, "div", "instituição do curso") : ""}${meta ? resumeEditable(`course.${index}.meta`, meta, "resume-item-meta", false, "div", "detalhes do curso") : ""}</div>`;
+        }).join("");
+
+        const sidebarSections = [];
+        if (educationHtml) sidebarSections.push(["Formação", educationHtml, "section.education"]);
+        if (coursesHtml) sidebarSections.push(["Cursos", coursesHtml, "section.courses"]);
+        const mainSections = [];
+        if (experienceHtml) mainSections.push(["Experiência", experienceHtml, "section.experience"]);
+        if (skillsHtml) mainSections.push(["Habilidades", skillsHtml, "section.skills"]);
+        const hasExperience = Boolean(experienceHtml);
+        const paper = $("#resumePaper");
+        const grid = $("#resumeGrid");
+        const single = $("#resumeSingle");
+        paper.classList.toggle("with-experience", hasExperience);
+        paper.classList.toggle("without-experience", !hasExperience);
+
+        if (hasExperience) {
+          $("#resumeSidebar").innerHTML = sidebarSections.map(([label, content, key]) => `<section class="resume-side-section resume-object" data-resume-object="${key}"><h2 class="resume-side-title">${label}</h2><div class="resume-side-content">${content}</div></section>`).join("");
+          $("#resumeSidebar").hidden = !sidebarSections.length;
+          $("#resumeSidebar").classList.toggle("two-sections", sidebarSections.length === 2);
+          $("#resumeMain").innerHTML = mainSections.map(([label, content, key]) => `<section class="resume-main-section resume-object" data-resume-object="${key}"><h2 class="resume-main-title">${label}</h2><div class="resume-main-content">${content}</div></section>`).join("");
+          $("#resumeMain").hidden = !mainSections.length;
+          $("#resumeMain").classList.toggle("two-sections", mainSections.length === 2);
+          grid.hidden = !sidebarSections.length && !mainSections.length;
+          grid.classList.toggle("no-sidebar", !sidebarSections.length);
+          grid.classList.toggle("no-main", !mainSections.length);
+          single.hidden = true;
+          single.innerHTML = "";
+        } else {
+          const singleSections = [];
+          if (educationHtml) singleSections.push(["Formação", educationHtml, "section.education"]);
+          if (coursesHtml) singleSections.push(["Cursos", coursesHtml, "section.courses"]);
+          if (skillsHtml) singleSections.push(["Habilidades", skillsHtml, "section.skills"]);
+          single.innerHTML = singleSections.map(([label, content, key]) => `<section class="resume-single-section resume-object" data-resume-object="${key}"><h2 class="resume-main-title">${label}</h2><div class="resume-single-content">${content}</div></section>`).join("");
+          single.hidden = !singleSections.length;
+          single.classList.toggle("three-sections", singleSections.length === 3);
+          grid.hidden = true;
+        }
+        renderCustomTextBoxes();
+        applySavedPageAssignments();
+        prepareResumeObjects();
+        applyResumeDensity();
+        setTimeout(checkOverflow, 20);
+      }
+
+      function restoreStaticResumeObjects() {
+        const paper = $("#resumePaper");
+        const grid = $("#resumeGrid");
+        if (!paper || !grid) return;
+        ["header.name", "header.contact", "section.objective"].forEach(key => {
+          const object = $(`[data-resume-object="${key}"]`, $("#paperStage"));
+          if (object) paper.insertBefore(object, grid);
+        });
+      }
+
+      function applySavedPageAssignments() {
+        const stage = $("#paperStage");
+        const page2Content = $("#resumePage2Content");
+        if (!stage || !page2Content) return;
+        $$("[data-resume-object]", stage).forEach(object => {
+          const layout = state.layoutEdits?.[object.dataset.resumeObject];
+          if (layout?.page === 2) page2Content.appendChild(object);
+        });
+        updatePage2Visibility();
+      }
+
+      function updatePage2Visibility() {
+        const page2 = $("#resumePaper2");
+        const content = $("#resumePage2Content");
+        if (!page2 || !content) return;
+        page2.hidden = !content.querySelector("[data-resume-object]");
+      }
+
+      function renderCustomTextBoxes() {
+        const paper = $("#resumePaper");
+        const stage = $("#paperStage");
+        if (!paper || !stage) return;
+        $$(".custom-text-box", stage).forEach(box => box.remove());
+        (state.customTextBoxes || []).forEach(box => {
+          const key = `custom.${box.id}`;
+          paper.insertAdjacentHTML("beforeend", `<div class="custom-text-box resume-object" data-resume-object="${key}">${resumeEditable(`${key}.text`, box.text || "Digite seu texto", "", true, "div", "caixa de texto")}</div>`);
+        });
+      }
+
+      function applyObjectLayout(object) {
+        const key = object.dataset.resumeObject;
+        const layout = state.layoutEdits?.[key];
+        object.style.transform = "";
+        object.style.width = "";
+        object.style.minHeight = "";
+        if (!layout) return;
+        object.style.transform = `translate(${Number(layout.x) || 0}px, ${Number(layout.y) || 0}px)`;
+        if (layout.width) object.style.width = `${layout.width}px`;
+        if (layout.height) object.style.minHeight = `${layout.height}px`;
+      }
+
+      function selectResumeObject(object) {
+        $$(".resume-object.is-selected", $("#paperStage")).forEach(item => item.classList.remove("is-selected"));
+        selectedResumeObject = object?.dataset?.resumeObject || null;
+        if (object) object.classList.add("is-selected");
+      }
+
+      function prepareResumeObjects() {
+        const stage = $("#paperStage");
+        if (!stage) return;
+        $$(".resume-paper", stage).forEach(paper => {
+          if (!$(".alignment-guide.vertical", paper)) paper.insertAdjacentHTML("beforeend", '<div class="alignment-guide vertical"></div><div class="alignment-guide horizontal"></div>');
+        });
+        $$("[data-resume-object]", stage).forEach(object => {
+          [...object.children].filter(child => child.classList.contains("object-controls") || child.classList.contains("resize-handle")).forEach(child => child.remove());
+          const key = object.dataset.resumeObject;
+          const canDelete = key.startsWith("custom.");
+          object.insertAdjacentHTML("beforeend", `<div class="object-controls" contenteditable="false"><button class="object-control" type="button" data-object-action="move" title="Arrastar este bloco">Mover</button>${canDelete ? '<button class="object-control object-delete" type="button" data-object-action="delete" title="Excluir esta caixa">Excluir</button>' : ""}</div><button class="resize-handle" type="button" data-object-action="resize" aria-label="Redimensionar bloco"></button>`);
+          applyObjectLayout(object);
+          object.classList.toggle("is-selected", selectedResumeObject === key);
+        });
+      }
+
+      function addCustomTextBox() {
+        const id = `${Date.now()}`;
+        state.customTextBoxes ||= [];
+        state.layoutEdits ||= {};
+        state.resumeEdits ||= {};
+        state.customTextBoxes.push({ id, text: "Digite seu texto" });
+        state.layoutEdits[`custom.${id}`] = { page: 1, auto: false, x: 250, y: 180, width: 270, height: 64 };
+        state.resumeEdits[`custom.${id}.text`] = "Digite seu texto";
+        selectedResumeObject = `custom.${id}`;
+        saveState();
+        renderResume();
+        setTimeout(() => $(`[data-resume-object="custom.${id}"] .resume-editable`)?.focus(), 0);
+      }
+
+      function deleteCustomTextBox(key) {
+        if (!key?.startsWith("custom.")) return;
+        const id = key.split(".")[1];
+        state.customTextBoxes = (state.customTextBoxes || []).filter(box => String(box.id) !== id);
+        delete state.layoutEdits?.[key];
+        delete state.resumeEdits?.[`${key}.text`];
+        selectedResumeObject = null;
+        saveState();
+        renderResume();
+      }
+
+      function resetResumeLayout() {
+        state.layoutEdits = {};
+        (state.customTextBoxes || []).forEach((box, index) => {
+          state.layoutEdits[`custom.${box.id}`] = { page: 1, auto: false, x: 250, y: 180 + index * 82, width: 270, height: 64 };
+        });
+        selectedResumeObject = null;
+        saveState();
+        renderResume();
+        toast("As posições originais foram restauradas.");
+      }
+
+      function alignSelectedObject(mode) {
+        if (!selectedResumeObject) return toast("Selecione primeiro um bloco do currículo.", true);
+        const object = $(`[data-resume-object="${selectedResumeObject}"]`, $("#paperStage"));
+        const paper = object?.closest(".resume-paper");
+        if (!object || !paper) return;
+        const pageRect = paper.getBoundingClientRect();
+        const objectRect = object.getBoundingClientRect();
+        const scale = pageRect.width / paper.offsetWidth || 1;
+        const current = state.layoutEdits?.[selectedResumeObject] || {};
+        const currentX = Number(current.x) || 0;
+        const currentY = Number(current.y) || 0;
+        const baseLeft = (objectRect.left - pageRect.left) / scale - currentX;
+        const baseTop = (objectRect.top - pageRect.top) / scale - currentY;
+        const style = getComputedStyle(paper);
+        const left = parseFloat(style.paddingLeft) || 0;
+        const right = paper.offsetWidth - (parseFloat(style.paddingRight) || 0);
+        const top = parseFloat(style.paddingTop) || 0;
+        const bottom = paper.offsetHeight - (parseFloat(style.paddingBottom) || 0);
+        const layout = { ...current, page: paper.id === "resumePaper2" ? 2 : 1, auto: false };
+        let guideAxis = "x";
+        let guidePosition = left;
+        if (mode === "left") layout.x = Math.round(left - baseLeft);
+        if (mode === "center") { guidePosition = (left + right) / 2; layout.x = Math.round(guidePosition - baseLeft - object.offsetWidth / 2); }
+        if (mode === "right") { guidePosition = right; layout.x = Math.round(right - baseLeft - object.offsetWidth); }
+        if (mode === "top") { guideAxis = "y"; guidePosition = top; layout.y = Math.round(top - baseTop); }
+        if (mode === "middle") { guideAxis = "y"; guidePosition = (top + bottom) / 2; layout.y = Math.round(guidePosition - baseTop - object.offsetHeight / 2); }
+        if (mode === "bottom") { guideAxis = "y"; guidePosition = bottom; layout.y = Math.round(bottom - baseTop - object.offsetHeight); }
+        state.layoutEdits ||= {};
+        state.layoutEdits[selectedResumeObject] = layout;
+        applyObjectLayout(object);
+        saveState();
+        hideAlignmentGuides();
+        showAlignmentGuide(paper, guideAxis, guidePosition);
+        setTimeout(hideAlignmentGuides, 700);
+        checkOverflow();
+      }
+
+      function startObjectGesture(event, object, type) {
+        if (!object?.dataset?.resumeObject) return;
+        event.preventDefault();
+        event.stopPropagation();
+        selectResumeObject(object);
+        const paper = object.closest(".resume-paper");
+        const paperRect = paper.getBoundingClientRect();
+        const objectRect = object.getBoundingClientRect();
+        const scale = paperRect.width / paper.offsetWidth || 1;
+        const key = object.dataset.resumeObject;
+        const current = state.layoutEdits?.[key] || {};
+        activeObjectGesture = {
+          type, key, object, scale,
+          startClientX: event.clientX,
+          startClientY: event.clientY,
+          startX: Number(current.x) || 0,
+          startY: Number(current.y) || 0,
+          startWidth: object.offsetWidth,
+          startHeight: object.offsetHeight,
+          baseLeft: (objectRect.left - paperRect.left) / scale - (Number(current.x) || 0),
+          baseTop: (objectRect.top - paperRect.top) / scale - (Number(current.y) || 0),
+          pointerOffsetX: (event.clientX - objectRect.left) / scale,
+          pointerOffsetY: (event.clientY - objectRect.top) / scale,
+          paperWidth: paper.offsetWidth,
+          paperHeight: paper.offsetHeight,
+          paper
+        };
+        document.body.classList.add("is-dragging");
+      }
+
+      function hideAlignmentGuides() {
+        $$(".alignment-guide", $("#paperStage")).forEach(guide => guide.classList.remove("show"));
+      }
+
+      function showAlignmentGuide(paper, axis, position) {
+        const guide = $(`.alignment-guide.${axis === "x" ? "vertical" : "horizontal"}`, paper);
+        if (!guide) return;
+        if (axis === "x") guide.style.left = `${position}px`;
+        else guide.style.top = `${position}px`;
+        guide.classList.add("show");
+      }
+
+      function snapObjectAxis(rawValue, baseValue, objectSize, targets, threshold = 6) {
+        const points = [
+          { value: baseValue + rawValue, offset: 0 },
+          { value: baseValue + rawValue + objectSize / 2, offset: objectSize / 2 },
+          { value: baseValue + rawValue + objectSize, offset: objectSize }
+        ];
+        let best = null;
+        points.forEach(point => targets.forEach(target => {
+          const distance = Math.abs(target - point.value);
+          if (distance <= threshold && (!best || distance < best.distance)) best = { distance, value: rawValue + target - point.value, guide: target };
+        }));
+        return best || { value: rawValue, guide: null };
+      }
+
+      function getAlignmentTargets(gesture) {
+        const paperRect = gesture.paper.getBoundingClientRect();
+        const x = [0, gesture.paperWidth / 2, gesture.paperWidth];
+        const y = [0, gesture.paperHeight / 2, gesture.paperHeight];
+        $$("[data-resume-object]", gesture.paper).forEach(object => {
+          if (object === gesture.object) return;
+          const rect = object.getBoundingClientRect();
+          const left = (rect.left - paperRect.left) / gesture.scale;
+          const top = (rect.top - paperRect.top) / gesture.scale;
+          const width = rect.width / gesture.scale;
+          const height = rect.height / gesture.scale;
+          x.push(left, left + width / 2, left + width);
+          y.push(top, top + height / 2, top + height);
+        });
+        return { x, y };
+      }
+
+      function moveObjectGesture(event) {
+        if (!activeObjectGesture) return;
+        const gesture = activeObjectGesture;
+        const dx = (event.clientX - gesture.startClientX) / gesture.scale;
+        const dy = (event.clientY - gesture.startClientY) / gesture.scale;
+        state.layoutEdits ||= {};
+        const layout = { ...(state.layoutEdits[gesture.key] || {}) };
+        hideAlignmentGuides();
+        if (gesture.type === "move") {
+          const targets = getAlignmentTargets(gesture);
+          const snappedX = snapObjectAxis(gesture.startX + dx, gesture.baseLeft, gesture.object.offsetWidth, targets.x);
+          const snappedY = snapObjectAxis(gesture.startY + dy, gesture.baseTop, gesture.object.offsetHeight, targets.y);
+          layout.x = Math.round(snappedX.value);
+          layout.y = Math.round(snappedY.value);
+          if (snappedX.guide !== null) showAlignmentGuide(gesture.paper, "x", snappedX.guide);
+          if (snappedY.guide !== null) showAlignmentGuide(gesture.paper, "y", snappedY.guide);
+        } else {
+          const currentLeft = gesture.baseLeft + gesture.startX;
+          const currentTop = gesture.baseTop + gesture.startY;
+          layout.width = Math.round(Math.max(120, Math.min(gesture.paperWidth - currentLeft, gesture.startWidth + dx)));
+          layout.height = Math.round(Math.max(40, Math.min(gesture.paperHeight - currentTop, gesture.startHeight + dy)));
+        }
+        state.layoutEdits[gesture.key] = layout;
+        applyObjectLayout(gesture.object);
+      }
+
+      function placeObjectOnPageOne(object, key) {
+        const paper = $("#resumePaper");
+        const grid = $("#resumeGrid");
+        if (key === "header.name") paper.insertBefore(object, $("#resumeContact") || grid);
+        else if (key === "header.contact") paper.insertBefore(object, $("#resumeObjectiveSection") || grid);
+        else if (key === "section.objective") paper.insertBefore(object, grid);
+        else if (key.startsWith("custom.")) paper.appendChild(object);
+        else {
+          const withoutExperience = paper.classList.contains("without-experience");
+          const container = withoutExperience ? $("#resumeSingle") : ["section.education", "section.courses"].includes(key) ? $("#resumeSidebar") : $("#resumeMain");
+          container?.appendChild(object);
+          const order = withoutExperience ? ["section.education", "section.courses", "section.skills"] : ["section.education", "section.courses", "section.experience", "section.skills"];
+          order.forEach(itemKey => {
+            const item = $(`[data-resume-object="${itemKey}"]`, paper);
+            if (item && item.parentElement === container) container.appendChild(item);
+          });
+        }
+      }
+
+      function finishObjectPageChange(event, gesture) {
+        const pages = [$("#resumePaper"), $("#resumePaper2")].filter(page => page && !page.hidden);
+        const targetPage = pages.find(page => {
+          const rect = page.getBoundingClientRect();
+          return event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+        });
+        if (!targetPage || targetPage === gesture.paper || gesture.type !== "move") return;
+        const layout = state.layoutEdits[gesture.key] || {};
+        layout.page = targetPage.id === "resumePaper2" ? 2 : 1;
+        layout.auto = false;
+        layout.x = 0;
+        layout.y = 0;
+        if (layout.page === 2) $("#resumePage2Content").appendChild(gesture.object);
+        else placeObjectOnPageOne(gesture.object, gesture.key);
+        gesture.object.style.transform = "";
+        const pageRect = targetPage.getBoundingClientRect();
+        const objectRect = gesture.object.getBoundingClientRect();
+        const scale = pageRect.width / targetPage.offsetWidth || 1;
+        const desiredLeft = (event.clientX - pageRect.left) / scale - gesture.pointerOffsetX;
+        const desiredTop = (event.clientY - pageRect.top) / scale - gesture.pointerOffsetY;
+        const baseLeft = (objectRect.left - pageRect.left) / scale;
+        const baseTop = (objectRect.top - pageRect.top) / scale;
+        layout.x = Math.round(Math.max(-baseLeft, Math.min(targetPage.offsetWidth - baseLeft - gesture.object.offsetWidth, desiredLeft - baseLeft)));
+        layout.y = Math.round(Math.max(-baseTop, Math.min(targetPage.offsetHeight - baseTop - gesture.object.offsetHeight, desiredTop - baseTop)));
+        state.layoutEdits[gesture.key] = layout;
+        applyObjectLayout(gesture.object);
+        updatePage2Visibility();
+      }
+
+      function endObjectGesture(event) {
+        if (!activeObjectGesture) return;
+        const gesture = activeObjectGesture;
+        state.layoutEdits ||= {};
+        state.layoutEdits[gesture.key] = { ...(state.layoutEdits[gesture.key] || {}), page: gesture.paper.id === "resumePaper2" ? 2 : 1, auto: false };
+        finishObjectPageChange(event, gesture);
+        activeObjectGesture = null;
+        document.body.classList.remove("is-dragging");
+        hideAlignmentGuides();
+        saveState();
+        checkOverflow();
+      }
+
+      function pageOneOverflows() {
+        const paper = $("#resumePaper");
+        const rect = paper.getBoundingClientRect();
+        const scale = rect.width / paper.offsetWidth || 1;
+        const bottomLimit = rect.top + (paper.offsetHeight - 6) * scale;
+        return $$("[data-resume-object], .resume-editable", paper).some(element => element.getBoundingClientRect().bottom > bottomLimit);
+      }
+
+      function paginateResume() {
+        const page1 = $("#resumePaper");
+        const page2Content = $("#resumePage2Content");
+        if (!page1 || !page2Content) return;
+
+        $$("[data-resume-object]", page2Content).filter(object => state.layoutEdits?.[object.dataset.resumeObject]?.auto).forEach(object => {
+          const key = object.dataset.resumeObject;
+          const layout = state.layoutEdits[key];
+          layout.page = 1;
+          layout.auto = false;
+          layout.x = 0;
+          layout.y = 0;
+          placeObjectOnPageOne(object, key);
+          applyObjectLayout(object);
+        });
+
+        let guard = 0;
+        while (pageOneOverflows() && guard < 12) {
+          const candidates = $$("[data-resume-object]", page1).filter(object => !["header.name", "header.contact"].includes(object.dataset.resumeObject));
+          candidates.sort((a, b) => b.getBoundingClientRect().bottom - a.getBoundingClientRect().bottom);
+          const object = candidates[0];
+          if (!object) break;
+          const key = object.dataset.resumeObject;
+          state.layoutEdits ||= {};
+          state.layoutEdits[key] = { ...(state.layoutEdits[key] || {}), page: 2, auto: true, x: 0, y: 0 };
+          page2Content.appendChild(object);
+          applyObjectLayout(object);
+          guard += 1;
+        }
+        updatePage2Visibility();
+        prepareResumeObjects();
+      }
+
+      function checkOverflow() {
+        fitPaperToMobile();
+        paginateResume();
+      }
+
+      function fitPaperToMobile() {
+        const stage = $("#paperStage");
+        if (!stage) return;
+        const zoom = window.innerWidth <= 720 ? String(Math.min(1, (stage.clientWidth - 16) / 794)) : "";
+        $$(".resume-paper", stage).forEach(paper => { paper.style.zoom = zoom; });
+      }
+
+      function addItem(group, maker, limit) {
+        if (state[group].length >= limit) return toast(`Você pode adicionar até ${limit} itens nesta seção.`, true);
+        state[group].push(maker());
+        if (group === "education") state.noEducation = false;
+        saveState(); renderRepeaters(); renderResume();
+      }
+
+      function removeItem(group, index) {
+        state[group].splice(index, 1);
+        const nextSkippedFields = {};
+        Object.entries(state.skippedFields || {}).forEach(([key, value]) => {
+          const match = key.match(new RegExp(`^${group}\\.(\\d+)\\.(.+)$`));
+          if (!match) return void (nextSkippedFields[key] = value);
+          const itemIndex = Number(match[1]);
+          if (itemIndex < index) nextSkippedFields[key] = value;
+          if (itemIndex > index) nextSkippedFields[`${group}.${itemIndex - 1}.${match[2]}`] = value;
+        });
+        state.skippedFields = nextSkippedFields;
+        if (group === "education" && !state[group].length) state[group].push(emptyEducation());
+        saveState(); renderRepeaters(); renderResume();
+      }
+
+      function wrapPdfText(text, font, size, maxWidth) {
+        const paragraphs = String(text || "").split(/\n/);
+        const lines = [];
+        paragraphs.forEach(paragraph => {
+          const words = paragraph.trim().split(/\s+/).filter(Boolean);
+          if (!words.length) { lines.push(""); return; }
+          let line = "";
+          words.forEach(word => {
+            const candidate = line ? `${line} ${word}` : word;
+            if (font.widthOfTextAtSize(candidate, size) <= maxWidth || !line) line = candidate;
+            else { lines.push(line); line = word; }
+          });
+          if (line) lines.push(line);
+        });
+        return lines;
+      }
+
+      async function downloadStructuredPdf(options = {}) {
+        const shouldDownload = options.download !== false;
+        const button = $("#downloadPdf");
+        if (!window.PDFLib) {
+          toast("O gerador de PDF não carregou. Atualize a página e tente novamente.", true);
+          throw new Error("Gerador de PDF indisponível");
+        }
+        if (shouldDownload) {
+          button.disabled = true;
+          button.textContent = "Gerando PDF...";
+        }
+        try {
+          const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+          const pdf = await PDFDocument.create();
+          const regular = await pdf.embedFont(StandardFonts.Helvetica);
+          const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+          const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
+          const pageWidth = 595.28;
+          const pageHeight = 841.89;
+          const marginX = 72;
+          const marginY = 36;
+          const charcoal = rgb(48 / 255, 56 / 255, 72 / 255);
+          const bodyColor = rgb(64 / 255, 64 / 255, 64 / 255);
+          const muted = rgb(89 / 255, 89 / 255, 89 / 255);
+          const sideFill = rgb(242 / 255, 242 / 255, 242 / 255);
+          const white = rgb(1, 1, 1);
+          const resumeDensity = getResumeDensity();
+          const bodySize = resumeDensity === "sparse" ? 10 : resumeDensity === "dense" ? 8.2 : 9.2;
+          const lineHeight = bodySize * 1.3;
+          const innerWidth = pageWidth - marginX * 2;
+          const sideWidth = innerWidth * .34;
+          const mainX = marginX + sideWidth;
+          const mainWidth = innerWidth - sideWidth;
+          const bottom = marginY;
+          let page;
+          let mainY;
+          let currentGridTop;
+
+          const startPage = continued => {
+            page = pdf.addPage([pageWidth, pageHeight]);
+            if (continued) {
+              currentGridTop = pageHeight - marginY;
+              page.drawRectangle({ x: marginX, y: bottom, width: sideWidth, height: currentGridTop - bottom, color: sideFill });
+              page.drawRectangle({ x: mainX, y: currentGridTop - 23, width: mainWidth, height: 23, color: charcoal });
+              page.drawText(`${(state.fullName || "CURRÍCULO").toUpperCase()} - CONTINUAÇÃO`, { x: mainX + 10, y: currentGridTop - 16, size: 9, font: bold, color: white });
+              mainY = currentGridTop - 31;
+            }
+          };
+
+          startPage(false);
+          let y = pageHeight - marginY - 8;
+          const name = (state.fullName || "SEU NOME COMPLETO").toUpperCase();
+          const nameSize = resumeDensity === "dense" ? 20 : 24;
+          const nameLines = wrapPdfText(name, regular, nameSize, innerWidth);
+          nameLines.forEach(line => {
+            const width = regular.widthOfTextAtSize(line, nameSize);
+            page.drawText(line, { x: marginX + (innerWidth - width) / 2, y, size: nameSize, font: regular, color: charcoal });
+            y -= nameSize * 1.12;
+          });
+          y -= 6;
+
+          const contactColumns = [formatLocation() || "Bairro e estado", [state.phone, state.age && `${state.age} anos`].filter(Boolean).join(" · ") || "Telefone e idade", [state.email, state.linkedin && state.linkedin.replace(/^https?:\/\//i, "")].filter(Boolean).join("\n") || "E-mail e LinkedIn"];
+          const contactWidth = innerWidth / 3;
+          const contactLines = contactColumns.map(text => wrapPdfText(text, regular, 8, contactWidth - 12));
+          const contactHeight = Math.max(...contactLines.map(lines => lines.length)) * 10;
+          contactLines.forEach((lines, column) => lines.forEach((line, index) => {
+            const width = regular.widthOfTextAtSize(line, 8);
+            page.drawText(line, { x: marginX + contactWidth * column + (contactWidth - width) / 2, y: y - index * 10, size: 8, font: regular, color: charcoal });
+          }));
+          y -= contactHeight + 10;
+
+          const objectiveTitleWidth = innerWidth * .66;
+          page.drawRectangle({ x: marginX + (innerWidth - objectiveTitleWidth) / 2, y: y - 21, width: objectiveTitleWidth, height: 21, color: charcoal });
+          const objectiveLabel = "OBJETIVO";
+          const objectiveLabelWidth = bold.widthOfTextAtSize(objectiveLabel, 9);
+          page.drawText(objectiveLabel, { x: marginX + (innerWidth - objectiveLabelWidth) / 2, y: y - 14.5, size: 9, font: bold, color: white });
+          y -= 32;
+          const objectiveLines = wrapPdfText(state.objective || "Objetivo profissional não informado.", regular, bodySize, innerWidth - 12);
+          objectiveLines.forEach(line => { page.drawText(line, { x: marginX + 6, y, size: bodySize, font: regular, color: bodyColor }); y -= lineHeight; });
+          y -= 12;
+          currentGridTop = y;
+          page.drawRectangle({ x: marginX, y: bottom, width: sideWidth, height: currentGridTop - bottom, color: sideFill });
+          mainY = currentGridTop;
+
+          const measureBlocks = (blocks, width) => blocks.map(block => {
+            const font = block.italic ? italic : block.bold ? bold : regular;
+            const size = block.size || bodySize;
+            const blockLineHeight = block.lineHeight || size * 1.3;
+            const lines = wrapPdfText(block.text, font, size, width);
+            return { ...block, font, size, lines, blockLineHeight, height: lines.length * blockLineHeight + (block.after ?? 4) };
+          });
+
+          const drawBlocks = (blocks, x, startY, width) => {
+            let cursor = startY;
+            measureBlocks(blocks, width).forEach(block => {
+              block.lines.forEach(line => {
+                page.drawText(line, { x, y: cursor, size: block.size, font: block.font, color: block.muted ? muted : bodyColor });
+                cursor -= block.blockLineHeight;
+              });
+              cursor -= block.after ?? 4;
+            });
+            return cursor;
+          };
+
+          const drawMainSection = (label, blocks) => {
+            const contentWidth = mainWidth - 24;
+            const measuredHeight = measureBlocks(blocks, contentWidth).reduce((sum, block) => sum + block.height, 0) + 35;
+            if (mainY - measuredHeight < bottom) startPage(true);
+            page.drawRectangle({ x: mainX, y: mainY - 22, width: mainWidth * .84, height: 22, color: charcoal });
+            const labelWidth = bold.widthOfTextAtSize(label.toUpperCase(), 8.5);
+            page.drawText(label.toUpperCase(), { x: mainX + Math.max(8, (mainWidth * .84 - labelWidth) / 2), y: mainY - 15, size: 8.5, font: bold, color: white });
+            mainY = drawBlocks(blocks, mainX + 12, mainY - 35, contentWidth) - 5;
+          };
+
+          let sideY = currentGridTop - 18;
+          const drawSideSection = (label, blocks) => {
+            page.drawText(label.toUpperCase(), { x: marginX + 10, y: sideY, size: 8.5, font: bold, color: charcoal });
+            const textWidth = bold.widthOfTextAtSize(label.toUpperCase(), 8.5);
+            page.drawLine({ start: { x: marginX + 14 + textWidth, y: sideY + 3 }, end: { x: marginX + sideWidth - 10, y: sideY + 3 }, thickness: .7, color: charcoal });
+            sideY = drawBlocks(blocks, marginX + 10, sideY - 18, sideWidth - 20) - 12;
+          };
+
+          const educationBlocks = [];
+          if (!state.noEducation) state.education.filter(i => i.institution || i.course).forEach(i => {
+            educationBlocks.push({ text: [i.course, i.institution].filter(Boolean).join(" - ").toUpperCase(), bold: true, after: 2 });
+            const meta = [i.level, i.status, i.completion, i.workload].filter(Boolean).join(" · ");
+            if (meta) educationBlocks.push({ text: meta, size: bodySize - .5, italic: true, muted: true, after: 7 });
+          });
+          drawSideSection("Formação", educationBlocks.length ? educationBlocks : [{ text: "Formação não informada.", italic: true, muted: true }]);
+
+          const highlightedSkills = [...new Set([...cleanLines(state.hardSkills), ...cleanLines(state.softSkills)])].slice(0, 5).map(skill => ({ text: `• ${skill}`, after: 2 }));
+          drawSideSection("Habilidades principais", highlightedSkills.length ? highlightedSkills : [{ text: "Habilidades não informadas.", italic: true, muted: true }]);
+
+          const experienceBlocks = [];
+          state.experiences.filter(i => i.organization || i.role || i.description).forEach(i => {
+            if (i.period || i.type) experienceBlocks.push({ text: [i.period, i.type].filter(Boolean).join(" - "), size: bodySize - .5, italic: true, muted: true, after: 2 });
+            experienceBlocks.push({ text: [i.role, i.organization].filter(Boolean).join(" · ").toUpperCase(), bold: true, after: 2 });
+            if (i.description) experienceBlocks.push({ text: i.description, after: 6 });
+          });
+          drawMainSection("Experiência", experienceBlocks.length ? experienceBlocks : [{ text: "Em busca da primeira oportunidade profissional." }]);
+
+          const skillBlocks = [];
+          const hard = cleanLines(state.hardSkills);
+          const soft = cleanLines(state.softSkills);
+          if (hard.length) {
+            skillBlocks.push({ text: "TÉCNICAS", bold: true, after: 2 });
+            hard.forEach(skill => skillBlocks.push({ text: `• ${skill}`, after: 1 }));
+          }
+          if (soft.length) {
+            skillBlocks.push({ text: "COMPORTAMENTAIS", bold: true, after: 2 });
+            soft.forEach(skill => skillBlocks.push({ text: `• ${skill}`, after: 1 }));
+          }
+          drawMainSection("Soft skills e hard skills", skillBlocks.length ? skillBlocks : [{ text: "Habilidades não informadas.", italic: true, muted: true }]);
+
+          const courseBlocks = [];
+          state.courses.filter(i => i.name || i.institution).forEach(i => {
+            courseBlocks.push({ text: [i.name, i.level].filter(Boolean).join(" - ").toUpperCase(), bold: true, after: 2 });
+            courseBlocks.push({ text: [i.institution, i.completion && `Concluído em ${i.completion}`, i.workload].filter(Boolean).join(" · "), size: bodySize - .5, italic: true, muted: true, after: 6 });
+          });
+          if (courseBlocks.length) drawMainSection("Cursos complementares", courseBlocks);
+
+          const bytes = await pdf.save();
+          const blob = new Blob([bytes], { type: "application/pdf" });
+          if (shouldDownload) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `${fileName()}.pdf`;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+            toast("PDF gerado com sucesso.");
+          }
+          return blob;
+        } catch (error) {
+          console.error(error);
+          toast("Não foi possível gerar o PDF nesta tentativa.", true);
+          if (!shouldDownload) throw error;
+          return null;
+        } finally {
+          if (shouldDownload) {
+            button.disabled = false;
+            button.textContent = "Baixar PDF";
+          }
+        }
+      }
+
+      function nextPaint() {
+        return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      }
+
+      async function renderResumePageToJpeg(sourcePage) {
+        const width = sourcePage.offsetWidth;
+        const height = sourcePage.offsetHeight;
+        const scale = 2;
+        const clone = sourcePage.cloneNode(true);
+        clone.hidden = false;
+        clone.style.margin = "0";
+        clone.style.zoom = "";
+        clone.style.boxShadow = "none";
+        clone.classList.remove("is-selected");
+        clone.querySelectorAll(".object-controls, .resize-handle, .alignment-guide").forEach(element => element.remove());
+        clone.querySelectorAll(".is-selected").forEach(element => element.classList.remove("is-selected"));
+        clone.querySelectorAll("[contenteditable]").forEach(element => element.removeAttribute("contenteditable"));
+        const css = [...document.querySelectorAll("style")].map(style => style.textContent).join("\n");
+        const markup = clone.outerHTML.replace(/&nbsp;/g, "&#160;");
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * scale}" height="${height * scale}" viewBox="0 0 ${width} ${height}"><foreignObject x="0" y="0" width="${width}" height="${height}"><div xmlns="http://www.w3.org/1999/xhtml"><style>${css}</style>${markup}</div></foreignObject></svg>`;
+        const svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+        try {
+          const image = await new Promise((resolve, reject) => {
+            const element = new Image();
+            element.onload = () => resolve(element);
+            element.onerror = () => reject(new Error("Não foi possível preparar a página do currículo."));
+            element.src = svgUrl;
+          });
+          const canvas = document.createElement("canvas");
+          canvas.width = width * scale;
+          canvas.height = height * scale;
+          const context = canvas.getContext("2d");
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          return await new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Não foi possível criar a imagem do currículo.")), "image/jpeg", .94));
+        } finally {
+          URL.revokeObjectURL(svgUrl);
+        }
+      }
+
+      async function createFinalPdfBlob() {
+        if (!window.PDFLib) throw new Error("Gerador de PDF indisponível");
+        checkOverflow();
+        selectResumeObject(null);
+        hideAlignmentGuides();
+        await nextPaint();
+        const { PDFDocument } = window.PDFLib;
+        const pdf = await PDFDocument.create();
+        const pages = [$("#resumePaper"), $("#resumePaper2")].filter(page => page && !page.hidden);
+        for (const resumePage of pages) {
+          const jpegBlob = await renderResumePageToJpeg(resumePage);
+          const jpeg = await pdf.embedJpg(await jpegBlob.arrayBuffer());
+          const page = pdf.addPage([595.28, 841.89]);
+          page.drawImage(jpeg, { x: 0, y: 0, width: 595.28, height: 841.89 });
+        }
+        return new Blob([await pdf.save()], { type: "application/pdf" });
+      }
+
+      async function downloadPdf() {
+        const button = $("#downloadPdf");
+        button.disabled = true;
+        button.textContent = "Gerando PDF...";
+        try {
+          const blob = await createFinalPdfBlob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `${fileName()}.pdf`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+          toast("PDF gerado com sucesso.");
+        } catch (error) {
+          console.error(error);
+          toast("Não foi possível gerar o PDF nesta tentativa.", true);
+        } finally {
+          button.disabled = false;
+          button.textContent = "Baixar PDF";
+        }
+      }
+
+      function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(",")[1]);
+          reader.onerror = () => reject(reader.error || new Error("Não foi possível preparar o anexo."));
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      async function sendResumeEmail() {
+        const email = $("#sendEmail");
+        const button = $("#sendResumeEmail");
+        if (!email.value || !email.checkValidity()) {
+          email.focus();
+          return toast("Digite um endereço de e-mail válido.", true);
+        }
+        button.disabled = true;
+        button.textContent = "Preparando PDF...";
+        try {
+          const pdfBlob = await createFinalPdfBlob();
+          button.textContent = "Enviando...";
+          const response = await fetch("/.netlify/functions/send-curriculo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              to: email.value.trim(),
+              candidateName: resumeValue("fullName", state.fullName || "Candidato(a)"),
+              candidateEmail: resumeValue("contact.email", state.email || ""),
+              fileName: `${fileName()}.pdf`,
+              pdfBase64: await blobToBase64(pdfBlob)
+            })
+          });
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(result.error || "O serviço de e-mail não respondeu.");
+          toast(`Currículo enviado para ${email.value.trim()}.`);
+          email.value = "";
+        } catch (error) {
+          console.error(error);
+          const local = location.protocol === "file:";
+          toast(local ? "O envio por e-mail funcionará após publicar o site e configurar o Gmail na hospedagem." : "Não foi possível enviar o currículo. Tente novamente em alguns instantes.", true);
+        } finally {
+          button.disabled = false;
+          button.textContent = "Enviar currículo";
+        }
+      }
+
+      function docxParagraph(text, options = {}) {
+        const { Paragraph, TextRun, AlignmentType } = window.docx;
+        const density = getResumeDensity();
+        const defaultSize = density === "sparse" ? 21 : density === "dense" ? 18 : 20;
+        const defaultAfter = density === "sparse" ? 100 : density === "dense" ? 50 : 80;
+        const alignment = options.align === "center" ? AlignmentType.CENTER : options.align === "right" ? AlignmentType.RIGHT : AlignmentType.LEFT;
+        return new Paragraph({
+          alignment,
+          spacing: { after: options.after ?? defaultAfter, line: options.line ?? 276 },
+          bullet: options.bullet ? { level: 0 } : undefined,
+          children: [new TextRun({ text: String(text || ""), font: "Arial", bold: !!options.bold, italics: !!options.italic, color: options.color || "404040", size: options.size || defaultSize, allCaps: !!options.caps, characterSpacing: options.characterSpacing })]
+        });
+      }
+
+      function docxTitleBand(label, noBorder) {
+        const { Table, TableRow, TableCell, WidthType, ShadingType, VerticalAlign } = window.docx;
+        return new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          columnWidths: [84, 16],
+          borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder, insideVertical: noBorder, insideHorizontal: noBorder },
+          rows: [new TableRow({
+            cantSplit: true,
+            children: [
+              new TableCell({ width: { size: 84, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, color: "auto", fill: "303848" }, margins: { top: 80, right: 100, bottom: 80, left: 100 }, verticalAlign: VerticalAlign.CENTER, borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder }, children: [docxParagraph(label, { align: "center", bold: true, caps: true, color: "FFFFFF", size: 19, after: 0, line: 240, characterSpacing: 40 })] }),
+              new TableCell({ width: { size: 16, type: WidthType.PERCENTAGE }, borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder }, children: [docxParagraph("", { after: 0 })] })
+            ]
+          })]
+        });
+      }
+
+      async function downloadWord() {
+        if (!window.docx) return toast("O gerador do Word não carregou. Verifique sua conexão e tente novamente.", true);
+        const button = $("#downloadWord");
+        button.disabled = true;
+        button.textContent = "Gerando Word...";
+        try {
+          const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType, AlignmentType, PageOrientation, VerticalAlign } = window.docx;
+          const density = getResumeDensity();
+          const noBorder = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+          const contentAfter = density === "sparse" ? 110 : density === "dense" ? 45 : 75;
+
+          const educationParagraphs = [];
+          if (state.noEducation) educationParagraphs.push(docxParagraph("Formação acadêmica não informada.", { italic: true, color: "595959" }));
+          else state.education.filter(i => i.institution || i.course).forEach(i => {
+            educationParagraphs.push(docxParagraph([i.course, i.institution].filter(Boolean).join(" - "), { bold: true, caps: true, after: 20 }));
+            const meta = [i.level, i.status, i.completion, i.workload].filter(Boolean).join(" · ");
+            if (meta) educationParagraphs.push(docxParagraph(meta, { italic: true, color: "595959", size: 18, after: contentAfter }));
+          });
+          if (!educationParagraphs.length) educationParagraphs.push(docxParagraph("Formação acadêmica não informada.", { italic: true, color: "595959" }));
+
+          const topSkillParagraphs = [...new Set([...cleanLines(state.hardSkills), ...cleanLines(state.softSkills)])].slice(0, 5).map(skill => docxParagraph(skill, { bullet: true, after: 25 }));
+          if (!topSkillParagraphs.length) topSkillParagraphs.push(docxParagraph("Habilidades não informadas.", { italic: true, color: "595959" }));
+
+          const sideChildren = [
+            docxParagraph("FORMAÇÃO  —", { bold: true, color: "303848", size: 20, after: 100, characterSpacing: 80 }),
+            ...educationParagraphs,
+            docxParagraph("HABILIDADES PRINCIPAIS  —", { bold: true, color: "303848", size: 20, after: 100, characterSpacing: 80 }),
+            ...topSkillParagraphs
+          ];
+
+          const expParagraphs = [];
+          state.experiences.filter(i => i.organization || i.role || i.description).forEach(i => {
+            if (i.period || i.type) expParagraphs.push(docxParagraph([i.period, i.type].filter(Boolean).join(" - "), { italic: true, color: "595959", size: 18, after: 20 }));
+            expParagraphs.push(docxParagraph([i.role, i.organization].filter(Boolean).join(" · "), { bold: true, caps: true, after: 20 }));
+            if (i.description) expParagraphs.push(docxParagraph(i.description, { after: contentAfter }));
+          });
+          if (!expParagraphs.length) expParagraphs.push(docxParagraph("Em busca da primeira oportunidade profissional."));
+
+          const skillParagraphs = [];
+          const hard = cleanLines(state.hardSkills);
+          const soft = cleanLines(state.softSkills);
+          if (hard.length) {
+            skillParagraphs.push(docxParagraph("TÉCNICAS", { bold: true, color: "303848", size: 18, after: 40 }));
+            hard.forEach(skill => skillParagraphs.push(docxParagraph(skill, { bullet: true, after: 20 })));
+          }
+          if (soft.length) {
+            skillParagraphs.push(docxParagraph("COMPORTAMENTAIS", { bold: true, color: "303848", size: 18, after: 40 }));
+            soft.forEach(skill => skillParagraphs.push(docxParagraph(skill, { bullet: true, after: 20 })));
+          }
+          if (!skillParagraphs.length) skillParagraphs.push(docxParagraph("Habilidades não informadas.", { italic: true, color: "595959" }));
+
+          const courseParagraphs = [];
+          state.courses.filter(i => i.name || i.institution).forEach(i => {
+            courseParagraphs.push(docxParagraph([i.name, i.level].filter(Boolean).join(" - "), { bold: true, caps: true, after: 20 }));
+            courseParagraphs.push(docxParagraph([i.institution, i.completion, i.workload].filter(Boolean).join(" · "), { italic: true, color: "595959", size: 18, after: contentAfter }));
+          });
+
+          const mainChildren = [docxTitleBand("EXPERIÊNCIA", noBorder), ...expParagraphs, docxTitleBand("SOFT SKILLS E HARD SKILLS", noBorder), ...skillParagraphs];
+          if (courseParagraphs.length) mainChildren.push(docxTitleBand("CURSOS COMPLEMENTARES", noBorder), ...courseParagraphs);
+
+          const contactColumns = [formatLocation() || "Bairro e estado", [state.phone, state.age && `${state.age} anos`].filter(Boolean).join(" · ") || "Telefone e idade", [state.email, state.linkedin].filter(Boolean).join("\n") || "E-mail e LinkedIn"];
+          const contactTable = new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            columnWidths: [33, 34, 33],
+            borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder, insideVertical: noBorder, insideHorizontal: noBorder },
+            rows: [new TableRow({ children: contactColumns.map(text => new TableCell({ width: { size: 33, type: WidthType.PERCENTAGE }, margins: { top: 30, right: 70, bottom: 80, left: 70 }, verticalAlign: VerticalAlign.CENTER, borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder }, children: [docxParagraph(text, { align: "center", color: "303848", size: 17, after: 0, line: 220 })] })) })]
+          });
+
+          const objectiveTitleTable = new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            columnWidths: [17, 66, 17],
+            borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder, insideVertical: noBorder, insideHorizontal: noBorder },
+            rows: [new TableRow({ children: [
+              new TableCell({ borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder }, children: [docxParagraph("", { after: 0 })] }),
+              new TableCell({ shading: { type: ShadingType.CLEAR, color: "auto", fill: "303848" }, margins: { top: 80, right: 80, bottom: 80, left: 80 }, verticalAlign: VerticalAlign.CENTER, borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder }, children: [docxParagraph("OBJETIVO", { align: "center", bold: true, color: "FFFFFF", size: 19, after: 0, characterSpacing: 40 })] }),
+              new TableCell({ borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder }, children: [docxParagraph("", { after: 0 })] })
+            ] })]
+          });
+
+          const mainTable = new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            columnWidths: [3054, 5912],
+            borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder, insideVertical: noBorder, insideHorizontal: noBorder },
+            rows: [new TableRow({ cantSplit: false, children: [
+              new TableCell({ width: { size: 34, type: WidthType.PERCENTAGE }, shading: { type: ShadingType.CLEAR, color: "auto", fill: "F2F2F2" }, margins: { top: 180, right: 160, bottom: 180, left: 160 }, verticalAlign: VerticalAlign.TOP, borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder }, children: sideChildren }),
+              new TableCell({ width: { size: 66, type: WidthType.PERCENTAGE }, margins: { top: 0, right: 0, bottom: 120, left: 0 }, verticalAlign: VerticalAlign.TOP, borders: { top: noBorder, bottom: noBorder, left: noBorder, right: noBorder }, children: mainChildren })
+            ] })]
+          });
+
+          const documentFile = new Document({
+            sections: [{
+              properties: { page: { size: { width: 11906, height: 16838, orientation: PageOrientation.PORTRAIT }, margin: { top: 720, right: 1440, bottom: 720, left: 1440, header: 709, footer: 709 } } },
+              children: [
+                docxParagraph(state.fullName || "SEU NOME COMPLETO", { align: "center", caps: true, color: "303848", size: density === "dense" ? 44 : 52, after: 100, line: 560, characterSpacing: 80 }),
+                contactTable,
+                objectiveTitleTable,
+                docxParagraph(state.objective || "Objetivo profissional não informado.", { color: "404040", size: density === "dense" ? 18 : 20, after: 140, line: 288 }),
+                mainTable
+              ]
+            }]
+          });
+          const blob = await Packer.toBlob(documentFile);
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url; link.download = `${fileName()}.docx`; link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+          toast("Arquivo Word gerado com sucesso.");
+        } catch (error) {
+          console.error(error);
+          toast("Não foi possível gerar o Word nesta tentativa.", true);
+        } finally {
+          button.disabled = false;
+          button.textContent = "Baixar Word";
+        }
+      }
+
+      function resetAll() {
+        if (!confirm("Deseja apagar todos os dados preenchidos e recomeçar?")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+        state = structuredClone(initialState);
+        populateFields(); renderRepeaters(); renderResume(); updateCounters(); goToStep(0, true);
+        toast("Dados apagados. Você pode começar novamente.");
+      }
+
+      function updateResumeEdit(target) {
+        const key = target?.dataset?.resumeKey;
+        if (!key) return;
+        state.resumeEdits ||= {};
+        state.resumeEdits[key] = target.innerText.replace(/\u00a0/g, " ").trim();
+        saveState();
+        setTimeout(checkOverflow, 20);
+      }
+
+      function initEvents() {
+        document.addEventListener("input", event => {
+          const resumeEdit = event.target.closest("[data-resume-key]");
+          if (resumeEdit) updateResumeEdit(resumeEdit);
+          else if (event.target.closest("[data-group]")) updateRepeater(event);
+          else updateFromField(event);
+        });
+        document.addEventListener("change", event => {
+          if (event.target.closest("[data-group]")) updateRepeater(event); else updateFromField(event);
+        });
+        document.addEventListener("click", event => {
+          const alignObject = event.target.closest("[data-align-object]");
+          if (alignObject) {
+            alignSelectedObject(alignObject.dataset.alignObject);
+            return;
+          }
+          const objectAction = event.target.closest("[data-object-action]");
+          if (objectAction?.dataset.objectAction === "delete") {
+            deleteCustomTextBox(objectAction.closest("[data-resume-object]")?.dataset.resumeObject);
+            return;
+          }
+          const openSuggestion = event.target.closest("[data-open-suggestions]");
+          const applySuggestionCard = event.target.closest("[data-apply-suggestion]");
+          const closeSuggestion = event.target.closest("[data-close-suggestions]");
+          const absenceButton = event.target.closest("[data-toggle-absence]");
+          if (absenceButton) {
+            toggleFieldAbsence(absenceButton);
+            return;
+          }
+          if (openSuggestion) {
+            openSuggestions(openSuggestion.dataset.openSuggestions, openSuggestion.dataset.index === undefined ? null : Number(openSuggestion.dataset.index));
+            return;
+          }
+          if (applySuggestionCard) {
+            applySuggestion(Number(applySuggestionCard.dataset.applySuggestion));
+            return;
+          }
+          if (closeSuggestion || event.target === $("#suggestionModal")) {
+            closeSuggestions();
+            return;
+          }
+          const next = event.target.closest("[data-next]");
+          const remove = event.target.closest("[data-remove]");
+          const dot = event.target.closest("[data-step]");
+          if (next) goToStep(state.step + 1);
+          if (remove) removeItem(remove.dataset.remove, Number(remove.dataset.index));
+          if (dot) {
+            const target = Number(dot.dataset.step);
+            if (target <= state.step || validateStep(state.step)) goToStep(target, true);
+          }
+        });
+        $("#nextButton").addEventListener("click", () => goToStep(state.step + 1));
+        $("#prevButton").addEventListener("click", () => goToStep(state.step - 1, true));
+        $("#resetTop").addEventListener("click", resetAll);
+        $("#addTextBox").addEventListener("click", addCustomTextBox);
+        $("#resetLayout").addEventListener("click", resetResumeLayout);
+        $("#addEducation").addEventListener("click", () => addItem("education", emptyEducation, 3));
+        $("#addExperience").addEventListener("click", () => addItem("experiences", emptyExperience, 3));
+        $("#addCourse").addEventListener("click", () => addItem("courses", emptyCourse, 4));
+        $("#noEducation").addEventListener("click", () => { state.noEducation = !state.noEducation; if (!state.education.length) state.education.push(emptyEducation()); saveState(); renderRepeaters(); renderResume(); });
+        $("#downloadPdf").addEventListener("click", downloadPdf);
+        $("#downloadWord").addEventListener("click", downloadWord);
+        $("#sendResumeEmail").addEventListener("click", sendResumeEmail);
+        $("#paperStage").addEventListener("paste", event => {
+          const editable = event.target.closest("[data-resume-key]");
+          if (!editable) return;
+          event.preventDefault();
+          let text = event.clipboardData.getData("text/plain");
+          if (editable.dataset.resumeMultiline !== "true") text = text.replace(/\s+/g, " ");
+          document.execCommand("insertText", false, text);
+        });
+        $("#paperStage").addEventListener("pointerdown", event => {
+          const control = event.target.closest("[data-object-action]");
+          const object = event.target.closest("[data-resume-object]");
+          if (control?.dataset.objectAction === "move") startObjectGesture(event, object, "move");
+          else if (control?.dataset.objectAction === "resize") startObjectGesture(event, object, "resize");
+          else if (object) selectResumeObject(object);
+          else selectResumeObject(null);
+        });
+        document.addEventListener("pointermove", moveObjectGesture);
+        document.addEventListener("pointerup", endObjectGesture);
+        document.addEventListener("pointercancel", endObjectGesture);
+        document.addEventListener("keydown", event => {
+          const resumeEdit = event.target.closest("[data-resume-key]");
+          if (resumeEdit && event.key === "Enter" && resumeEdit.dataset.resumeMultiline !== "true") {
+            event.preventDefault();
+            resumeEdit.blur();
+            return;
+          }
+          if ((event.key === "Delete" || event.key === "Backspace") && selectedResumeObject?.startsWith("custom.") && !resumeEdit) {
+            event.preventDefault();
+            deleteCustomTextBox(selectedResumeObject);
+            return;
+          }
+          if (event.key === "Tab" && !event.shiftKey) applyTabExample(event.target);
+          if (event.key === "Escape" && !$("#suggestionModal").hidden) closeSuggestions();
+          else if (event.key === "Escape" && selectedResumeObject) selectResumeObject(null);
+        });
+        window.addEventListener("resize", checkOverflow);
+      }
+
+      renderDots();
+      populateFields();
+      renderRepeaters();
+      updateCounters();
+      renderResume();
+      initEvents();
+      updateStepUI();
+    })();
+  </script>
+</body>
+</html>
