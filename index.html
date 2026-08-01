@@ -1748,10 +1748,11 @@
         return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       }
 
-      async function renderResumePageToJpeg(sourcePage) {
+      async function renderResumePageToJpeg(sourcePage, options = {}) {
         const width = sourcePage.offsetWidth;
         const height = sourcePage.offsetHeight;
-        const scale = 2;
+        const scale = options.scale || 2;
+        const quality = options.quality || .94;
         const clone = sourcePage.cloneNode(true);
         clone.hidden = false;
         clone.style.margin = "0";
@@ -1779,13 +1780,13 @@
           context.fillStyle = "#ffffff";
           context.fillRect(0, 0, canvas.width, canvas.height);
           context.drawImage(image, 0, 0, canvas.width, canvas.height);
-          return await new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Não foi possível criar a imagem do currículo.")), "image/jpeg", .94));
+          return await new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Não foi possível criar a imagem do currículo.")), "image/jpeg", quality));
         } finally {
           URL.revokeObjectURL(svgUrl);
         }
       }
 
-      async function createFinalPdfBlob() {
+      async function createFinalPdfBlob(options = {}) {
         if (!window.PDFLib) throw new Error("Gerador de PDF indisponível");
         checkOverflow();
         selectResumeObject(null);
@@ -1795,7 +1796,7 @@
         const pdf = await PDFDocument.create();
         const pages = [$("#resumePaper"), $("#resumePaper2")].filter(page => page && !page.hidden);
         for (const resumePage of pages) {
-          const jpegBlob = await renderResumePageToJpeg(resumePage);
+          const jpegBlob = await renderResumePageToJpeg(resumePage, options);
           const jpeg = await pdf.embedJpg(await jpegBlob.arrayBuffer());
           const page = pdf.addPage([595.28, 841.89]);
           page.drawImage(jpeg, { x: 0, y: 0, width: 595.28, height: 841.89 });
@@ -1844,7 +1845,14 @@
         button.disabled = true;
         button.textContent = "Preparando PDF...";
         try {
-          const pdfBlob = await createFinalPdfBlob();
+          let pdfBlob = await createFinalPdfBlob({ scale: 1.5, quality: .82 });
+          if (pdfBlob.size > 3_500_000) {
+            button.textContent = "Otimizando PDF...";
+            pdfBlob = await createFinalPdfBlob({ scale: 1, quality: .7 });
+          }
+          if (pdfBlob.size > 4_000_000) {
+            throw new Error("O currículo ficou muito grande para envio. Baixe o PDF e envie-o pelo seu e-mail.");
+          }
           button.textContent = "Enviando...";
           const response = await fetch("/.netlify/functions/send-curriculo", {
             method: "POST",
@@ -1858,13 +1866,20 @@
             })
           });
           const result = await response.json().catch(() => ({}));
-          if (!response.ok) throw new Error(result.error || "O serviço de e-mail não respondeu.");
+          if (!response.ok) {
+            const message = result.error || (response.status === 413
+              ? "O PDF ficou muito grande para envio. Baixe o arquivo e envie-o pelo seu e-mail."
+              : `O serviço de e-mail não respondeu corretamente (${response.status}).`);
+            throw new Error(message);
+          }
           toast(`Currículo enviado para ${email.value.trim()}.`);
           email.value = "";
         } catch (error) {
           console.error(error);
           const local = location.protocol === "file:";
-          toast(local ? "O envio por e-mail funcionará após publicar o site e configurar o Gmail na hospedagem." : "Não foi possível enviar o currículo. Tente novamente em alguns instantes.", true);
+          toast(local
+            ? "O envio por e-mail funcionará após publicar o site e configurar o Gmail na hospedagem."
+            : (error?.message || "Não foi possível enviar o currículo. Tente novamente em alguns instantes."), true);
         } finally {
           button.disabled = false;
           button.textContent = "Enviar currículo";
