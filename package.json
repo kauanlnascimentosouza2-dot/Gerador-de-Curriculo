@@ -1,0 +1,9 @@
+{
+  "name": "gerador-curriculo-insf",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gerador de currículos do Instituto Social Nossa Senhora de Fátima",
+  "dependencies": {
+    "nodemailer": "^9.0.3"
+  }
+}
