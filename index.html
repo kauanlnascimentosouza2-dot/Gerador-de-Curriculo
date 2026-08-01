@@ -1620,14 +1620,14 @@
               currentGridTop = pageHeight - marginY;
               page.drawRectangle({ x: marginX, y: bottom, width: sideWidth, height: currentGridTop - bottom, color: sideFill });
               page.drawRectangle({ x: mainX, y: currentGridTop - 23, width: mainWidth, height: 23, color: charcoal });
-              page.drawText(`${(state.fullName || "CURRÍCULO").toUpperCase()} - CONTINUAÇÃO`, { x: mainX + 10, y: currentGridTop - 16, size: 9, font: bold, color: white });
+              page.drawText(`${resumeValue("fullName", state.fullName || "CURRÍCULO").toUpperCase()} - CONTINUAÇÃO`, { x: mainX + 10, y: currentGridTop - 16, size: 9, font: bold, color: white });
               mainY = currentGridTop - 31;
             }
           };
 
           startPage(false);
           let y = pageHeight - marginY - 8;
-          const name = (state.fullName || "SEU NOME COMPLETO").toUpperCase();
+          const name = resumeValue("fullName", state.fullName || "SEU NOME COMPLETO").toUpperCase();
           const nameSize = resumeDensity === "dense" ? 20 : 24;
           const nameLines = wrapPdfText(name, regular, nameSize, innerWidth);
           nameLines.forEach(line => {
@@ -1637,7 +1637,11 @@
           });
           y -= 6;
 
-          const contactColumns = [formatLocation() || "Bairro e estado", [state.phone, state.age && `${state.age} anos`].filter(Boolean).join(" · ") || "Telefone e idade", [state.email, state.linkedin && state.linkedin.replace(/^https?:\/\//i, "")].filter(Boolean).join("\n") || "E-mail e LinkedIn"];
+          const contactColumns = [
+            resumeValue("contact.location", formatLocation()) || "Bairro e estado",
+            [resumeValue("contact.phone", state.phone), resumeValue("contact.age", state.age && `${state.age} anos`)].filter(Boolean).join(" · ") || "Telefone e idade",
+            [resumeValue("contact.email", state.email), resumeValue("contact.linkedin", state.linkedin && state.linkedin.replace(/^https?:\/\//i, ""))].filter(Boolean).join("\n") || "E-mail e LinkedIn"
+          ];
           const contactWidth = innerWidth / 3;
           const contactLines = contactColumns.map(text => wrapPdfText(text, regular, 8, contactWidth - 12));
           const contactHeight = Math.max(...contactLines.map(lines => lines.length)) * 10;
@@ -1653,7 +1657,7 @@
           const objectiveLabelWidth = bold.widthOfTextAtSize(objectiveLabel, 9);
           page.drawText(objectiveLabel, { x: marginX + (innerWidth - objectiveLabelWidth) / 2, y: y - 14.5, size: 9, font: bold, color: white });
           y -= 32;
-          const objectiveLines = wrapPdfText(state.objective || "Objetivo profissional não informado.", regular, bodySize, innerWidth - 12);
+          const objectiveLines = wrapPdfText(resumeValue("objective", state.objective) || "Objetivo profissional não informado.", regular, bodySize, innerWidth - 12);
           objectiveLines.forEach(line => { page.drawText(line, { x: marginX + 6, y, size: bodySize, font: regular, color: bodyColor }); y -= lineHeight; });
           y -= 12;
           currentGridTop = y;
@@ -1699,27 +1703,36 @@
           };
 
           const educationBlocks = [];
-          if (!state.noEducation) state.education.filter(i => i.institution || i.course).forEach(i => {
-            educationBlocks.push({ text: [i.course, i.institution].filter(Boolean).join(" - ").toUpperCase(), bold: true, after: 2 });
-            const meta = [i.level, i.status, i.completion, i.workload].filter(Boolean).join(" · ");
+          if (!state.noEducation) state.education.map((item, index) => ({ item, index })).filter(({ item }) => item.institution || item.course).forEach(({ item: i, index }) => {
+            const defaultTitle = [i.level, i.course].filter(Boolean).join(" — ") || i.institution;
+            const title = resumeValue(`education.${index}.title`, defaultTitle);
+            const institution = defaultTitle !== i.institution ? resumeValue(`education.${index}.institution`, i.institution) : "";
+            educationBlocks.push({ text: [title, institution].filter(Boolean).join(" - ").toUpperCase(), bold: true, after: 2 });
+            const defaultMeta = [i.status, i.completion && `${i.status === "Concluído" ? "Concluído" : "Previsão"}: ${i.completion}`, i.workload].filter(Boolean).join(" · ");
+            const meta = resumeValue(`education.${index}.meta`, defaultMeta);
             if (meta) educationBlocks.push({ text: meta, size: bodySize - .5, italic: true, muted: true, after: 7 });
           });
           drawSideSection("Formação", educationBlocks.length ? educationBlocks : [{ text: "Formação não informada.", italic: true, muted: true }]);
 
-          const highlightedSkills = [...new Set([...cleanLines(state.hardSkills), ...cleanLines(state.softSkills)])].slice(0, 5).map(skill => ({ text: `• ${skill}`, after: 2 }));
+          const editedHardSkills = cleanLines(state.hardSkills).map((skill, index) => resumeValue(`hardSkills.${index}`, skill)).filter(Boolean);
+          const editedSoftSkills = cleanLines(state.softSkills).map((skill, index) => resumeValue(`softSkills.${index}`, skill)).filter(Boolean);
+          const highlightedSkills = [...new Set([...editedHardSkills, ...editedSoftSkills])].slice(0, 5).map(skill => ({ text: `• ${skill}`, after: 2 }));
           drawSideSection("Habilidades principais", highlightedSkills.length ? highlightedSkills : [{ text: "Habilidades não informadas.", italic: true, muted: true }]);
 
           const experienceBlocks = [];
-          state.experiences.filter(i => i.organization || i.role || i.description).forEach(i => {
-            if (i.period || i.type) experienceBlocks.push({ text: [i.period, i.type].filter(Boolean).join(" - "), size: bodySize - .5, italic: true, muted: true, after: 2 });
-            experienceBlocks.push({ text: [i.role, i.organization].filter(Boolean).join(" · ").toUpperCase(), bold: true, after: 2 });
-            if (i.description) experienceBlocks.push({ text: i.description, after: 6 });
+          state.experiences.map((item, index) => ({ item, index })).filter(({ item }) => item.organization || item.role || item.description).forEach(({ item: i, index }) => {
+            const meta = resumeValue(`experience.${index}.meta`, [i.period, i.type].filter(Boolean).join(" — "));
+            const title = resumeValue(`experience.${index}.title`, [i.role, i.organization].filter(Boolean).join(" · "));
+            const description = resumeValue(`experience.${index}.description`, i.description);
+            if (meta) experienceBlocks.push({ text: meta, size: bodySize - .5, italic: true, muted: true, after: 2 });
+            if (title) experienceBlocks.push({ text: title.toUpperCase(), bold: true, after: 2 });
+            if (description) experienceBlocks.push({ text: description, after: 6 });
           });
           drawMainSection("Experiência", experienceBlocks.length ? experienceBlocks : [{ text: "Em busca da primeira oportunidade profissional." }]);
 
           const skillBlocks = [];
-          const hard = cleanLines(state.hardSkills);
-          const soft = cleanLines(state.softSkills);
+          const hard = editedHardSkills;
+          const soft = editedSoftSkills;
           if (hard.length) {
             skillBlocks.push({ text: "TÉCNICAS", bold: true, after: 2 });
             hard.forEach(skill => skillBlocks.push({ text: `• ${skill}`, after: 1 }));
@@ -1731,11 +1744,18 @@
           drawMainSection("Soft skills e hard skills", skillBlocks.length ? skillBlocks : [{ text: "Habilidades não informadas.", italic: true, muted: true }]);
 
           const courseBlocks = [];
-          state.courses.filter(i => i.name || i.institution).forEach(i => {
-            courseBlocks.push({ text: [i.name, i.level].filter(Boolean).join(" - ").toUpperCase(), bold: true, after: 2 });
-            courseBlocks.push({ text: [i.institution, i.completion && `Concluído em ${i.completion}`, i.workload].filter(Boolean).join(" · "), size: bodySize - .5, italic: true, muted: true, after: 6 });
+          state.courses.map((item, index) => ({ item, index })).filter(({ item }) => item.name || item.institution).forEach(({ item: i, index }) => {
+            const title = resumeValue(`course.${index}.title`, i.name || i.institution);
+            const institution = i.name && i.institution ? resumeValue(`course.${index}.institution`, i.institution) : "";
+            const defaultMeta = [i.level, i.completion && `Concluído em ${i.completion}`, i.workload].filter(Boolean).join(" · ");
+            const meta = resumeValue(`course.${index}.meta`, defaultMeta);
+            courseBlocks.push({ text: [title, institution].filter(Boolean).join(" - ").toUpperCase(), bold: true, after: 2 });
+            if (meta) courseBlocks.push({ text: meta, size: bodySize - .5, italic: true, muted: true, after: 6 });
           });
           if (courseBlocks.length) drawMainSection("Cursos complementares", courseBlocks);
+
+          const customBlocks = (state.customTextBoxes || []).map(box => resumeValue(`custom.${box.id}.text`, box.text)).filter(Boolean).map(text => ({ text, after: 5 }));
+          if (customBlocks.length) drawMainSection("Outras informações", customBlocks);
 
           const bytes = await pdf.save();
           const blob = new Blob([bytes], { type: "application/pdf" });
@@ -1764,6 +1784,119 @@
 
       function nextPaint() {
         return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      }
+
+      function visibleCanvasColor(color) {
+        if (!color || color === "transparent") return false;
+        return !/^rgba\([^)]*,\s*0(?:\.0+)?\)$/.test(color.replace(/\s+/g, ""));
+      }
+
+      function transformedCanvasText(text, transform) {
+        if (transform === "uppercase") return text.toUpperCase();
+        if (transform === "lowercase") return text.toLowerCase();
+        if (transform === "capitalize") return text.replace(/(^|\s)\S/g, letter => letter.toUpperCase());
+        return text;
+      }
+
+      function canvasFontFromStyle(style) {
+        const fontStyle = style.fontStyle === "normal" ? "" : `${style.fontStyle} `;
+        const fontWeight = style.fontWeight === "normal" ? "400" : style.fontWeight;
+        return `${fontStyle}${fontWeight} ${style.fontSize} ${style.fontFamily}`;
+      }
+
+      async function renderResumePageDirectly(sourcePage, scale, quality) {
+        const width = sourcePage.offsetWidth;
+        const height = sourcePage.offsetHeight;
+        const pageRect = sourcePage.getBoundingClientRect();
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        const context = canvas.getContext("2d");
+        context.scale(scale, scale);
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, width, height);
+
+        const excluded = ".object-controls, .resize-handle, .alignment-guide";
+        const elements = [sourcePage, ...sourcePage.querySelectorAll("*")];
+        elements.forEach(element => {
+          if (element !== sourcePage && element.closest(excluded)) return;
+          const style = getComputedStyle(element);
+          if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return;
+          const rect = element.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          const x = rect.left - pageRect.left;
+          const y = rect.top - pageRect.top;
+          if (x >= width || y >= height || x + rect.width <= 0 || y + rect.height <= 0) return;
+
+          context.save();
+          context.globalAlpha = Number(style.opacity) || 1;
+          if (visibleCanvasColor(style.backgroundColor)) {
+            context.fillStyle = style.backgroundColor;
+            context.fillRect(x, y, rect.width, rect.height);
+          }
+          const borders = [
+            [style.borderTopWidth, style.borderTopColor, x, y, rect.width, parseFloat(style.borderTopWidth)],
+            [style.borderRightWidth, style.borderRightColor, x + rect.width - parseFloat(style.borderRightWidth), y, parseFloat(style.borderRightWidth), rect.height],
+            [style.borderBottomWidth, style.borderBottomColor, x, y + rect.height - parseFloat(style.borderBottomWidth), rect.width, parseFloat(style.borderBottomWidth)],
+            [style.borderLeftWidth, style.borderLeftColor, x, y, parseFloat(style.borderLeftWidth), rect.height]
+          ];
+          borders.forEach(([borderWidth, borderColor, bx, by, bw, bh]) => {
+            if (parseFloat(borderWidth) > 0 && visibleCanvasColor(borderColor) && bw > 0 && bh > 0) {
+              context.fillStyle = borderColor;
+              context.fillRect(bx, by, bw, bh);
+            }
+          });
+          context.restore();
+        });
+
+        sourcePage.querySelectorAll("li").forEach(item => {
+          if (item.closest(excluded)) return;
+          const style = getComputedStyle(item);
+          if (style.display === "none" || style.visibility === "hidden") return;
+          const rect = item.getBoundingClientRect();
+          const fontSize = parseFloat(style.fontSize) || 12;
+          context.save();
+          context.font = canvasFontFromStyle(style);
+          context.fillStyle = style.color;
+          context.textBaseline = "alphabetic";
+          context.fillText("•", rect.left - pageRect.left, rect.top - pageRect.top + fontSize);
+          context.restore();
+        });
+
+        const walker = document.createTreeWalker(sourcePage, NodeFilter.SHOW_TEXT);
+        let textNode;
+        while ((textNode = walker.nextNode())) {
+          const parent = textNode.parentElement;
+          if (!parent || parent.closest(excluded)) continue;
+          const style = getComputedStyle(parent);
+          if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) continue;
+          const value = textNode.nodeValue || "";
+          const words = [...value.matchAll(/\S+/g)];
+          if (!words.length) continue;
+          const fontSize = parseFloat(style.fontSize) || 12;
+          context.save();
+          context.globalAlpha = Number(style.opacity) || 1;
+          context.font = canvasFontFromStyle(style);
+          context.fillStyle = style.color;
+          context.textBaseline = "alphabetic";
+          if ("letterSpacing" in context) context.letterSpacing = style.letterSpacing;
+          words.forEach(match => {
+            const range = document.createRange();
+            range.setStart(textNode, match.index);
+            range.setEnd(textNode, match.index + match[0].length);
+            const rect = range.getClientRects()[0];
+            range.detach?.();
+            if (!rect) return;
+            const x = rect.left - pageRect.left;
+            const top = rect.top - pageRect.top;
+            if (x >= width || top >= height || x + rect.width <= 0 || top + rect.height <= 0) return;
+            const baseline = top + Math.max(fontSize * .82, (rect.height - fontSize) / 2 + fontSize * .82);
+            context.fillText(transformedCanvasText(match[0], style.textTransform), x, baseline);
+          });
+          context.restore();
+        }
+
+        return await new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Não foi possível criar a imagem do currículo.")), "image/jpeg", quality));
       }
 
       async function renderResumePageToJpeg(sourcePage, options = {}) {
@@ -1801,6 +1934,9 @@
           context.fillRect(0, 0, canvas.width, canvas.height);
           context.drawImage(image, 0, 0, canvas.width, canvas.height);
           return await new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Não foi possível criar a imagem do currículo.")), "image/jpeg", quality));
+        } catch (error) {
+          console.warn("A captura SVG não pôde ser usada. Desenhando a folha diretamente.", error);
+          return await renderResumePageDirectly(sourcePage, scale, quality);
         } finally {
           URL.revokeObjectURL(svgUrl);
         }
