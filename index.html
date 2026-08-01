@@ -1763,8 +1763,10 @@
         clone.querySelectorAll(".is-selected").forEach(element => element.classList.remove("is-selected"));
         clone.querySelectorAll("[contenteditable]").forEach(element => element.removeAttribute("contenteditable"));
         const css = [...document.querySelectorAll("style")].map(style => style.textContent).join("\n");
-        const markup = clone.outerHTML.replace(/&nbsp;/g, "&#160;");
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * scale}" height="${height * scale}" viewBox="0 0 ${width} ${height}"><foreignObject x="0" y="0" width="${width}" height="${height}"><div xmlns="http://www.w3.org/1999/xhtml"><style>${css}</style>${markup}</div></foreignObject></svg>`;
+        clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+        const markup = new XMLSerializer().serializeToString(clone).replace(/&nbsp;/g, "&#160;");
+        const safeCss = css.replace(/]]>/g, "]]]]><![CDATA[>");
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${Math.round(width * scale)}" height="${Math.round(height * scale)}" viewBox="0 0 ${width} ${height}"><foreignObject x="0" y="0" width="${width}" height="${height}"><div xmlns="http://www.w3.org/1999/xhtml"><style type="text/css"><![CDATA[${safeCss}]]></style>${markup}</div></foreignObject></svg>`;
         const svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
         try {
           const image = await new Promise((resolve, reject) => {
@@ -1845,10 +1847,22 @@
         button.disabled = true;
         button.textContent = "Preparando PDF...";
         try {
-          let pdfBlob = await createFinalPdfBlob({ scale: 1.5, quality: .82 });
+          let pdfBlob;
+          try {
+            pdfBlob = await createFinalPdfBlob({ scale: 1.5, quality: .82 });
+          } catch (visualError) {
+            console.warn("A versão visual do PDF não pôde ser preparada. Usando versão estruturada.", visualError);
+            button.textContent = "Preparando PDF alternativo...";
+            pdfBlob = await downloadStructuredPdf({ download: false });
+          }
           if (pdfBlob.size > 3_500_000) {
             button.textContent = "Otimizando PDF...";
-            pdfBlob = await createFinalPdfBlob({ scale: 1, quality: .7 });
+            try {
+              pdfBlob = await createFinalPdfBlob({ scale: 1, quality: .7 });
+            } catch (visualError) {
+              console.warn("A versão visual otimizada não pôde ser preparada. Usando versão estruturada.", visualError);
+              pdfBlob = await downloadStructuredPdf({ download: false });
+            }
           }
           if (pdfBlob.size > 4_000_000) {
             throw new Error("O currículo ficou muito grande para envio. Baixe o PDF e envie-o pelo seu e-mail.");
