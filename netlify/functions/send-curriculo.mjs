@@ -20,10 +20,10 @@ function safeText(value, maximum = 160) {
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS") return response(204, {});
   if (event.httpMethod !== "POST") return response(405, { error: "Método não permitido." });
-  if (!event.body || event.body.length > 8_000_000) return response(413, { error: "O arquivo é muito grande para envio." });
+  if (!event.body || event.body.length > 5_800_000) return response(413, { error: "O arquivo é muito grande para envio." });
 
-  const gmailUser = process.env.GMAIL_USER;
-  const gmailPassword = process.env.GMAIL_APP_PASSWORD;
+  const gmailUser = String(process.env.GMAIL_USER || "").trim();
+  const gmailPassword = String(process.env.GMAIL_APP_PASSWORD || "").replace(/\s+/g, "");
   if (!gmailUser || !gmailPassword) return response(503, { error: "O serviço de e-mail ainda não foi configurado." });
 
   try {
@@ -35,7 +35,7 @@ export async function handler(event) {
     const pdfBase64 = String(body.pdfBase64 || "");
 
     if (!emailPattern.test(to)) return response(400, { error: "O endereço de destino não é válido." });
-    if (!pdfBase64 || pdfBase64.length > 7_500_000) return response(400, { error: "O PDF não pôde ser anexado." });
+    if (!pdfBase64 || pdfBase64.length > 5_400_000) return response(400, { error: "O PDF não pôde ser anexado porque ficou muito grande." });
 
     const attachment = Buffer.from(pdfBase64, "base64");
     if (attachment.length < 100 || attachment.subarray(0, 4).toString() !== "%PDF") return response(400, { error: "O anexo recebido não é um PDF válido." });
@@ -47,6 +47,8 @@ export async function handler(event) {
       auth: { user: gmailUser, pass: gmailPassword }
     });
 
+    console.log("Pedido de envio recebido.", { attachmentBytes: attachment.length });
+
     await transporter.sendMail({
       from: `"Instituto Social Nossa Senhora de Fátima" <${gmailUser}>`,
       to,
@@ -57,9 +59,11 @@ export async function handler(event) {
       attachments: [{ filename: fileName.endsWith(".pdf") ? fileName : `${fileName}.pdf`, content: attachment, contentType: "application/pdf" }]
     });
 
+    console.log("Currículo enviado com sucesso.");
     return response(200, { ok: true });
   } catch (error) {
     console.error("Falha ao enviar currículo:", error?.message || error);
+    if (error?.code === "EAUTH") return response(502, { error: "O Gmail recusou a senha de aplicativo. Gere uma nova senha e atualize GMAIL_APP_PASSWORD." });
     return response(500, { error: "Não foi possível enviar o currículo neste momento." });
   }
 }
