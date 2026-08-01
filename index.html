@@ -1829,12 +1829,21 @@
         button.disabled = true;
         button.textContent = "Gerando PDF...";
         try {
-          const blob = await createFinalPdfBlob();
+          let blob;
+          try {
+            blob = await createFinalPdfBlob();
+          } catch (visualError) {
+            console.warn("A versão visual do PDF não pôde ser preparada. Usando versão estruturada.", visualError);
+            button.textContent = "Gerando PDF alternativo...";
+            blob = await downloadStructuredPdf({ download: false });
+          }
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
           link.download = `${fileName()}.pdf`;
+          document.body.appendChild(link);
           link.click();
+          link.remove();
           setTimeout(() => URL.revokeObjectURL(url), 2000);
           toast("PDF gerado com sucesso.");
         } catch (error) {
